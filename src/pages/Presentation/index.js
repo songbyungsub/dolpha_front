@@ -30,6 +30,10 @@ import Button from "@mui/material/Button";
 import ArrowUpward from "@mui/icons-material/ArrowUpward";
 import ArrowDownward from "@mui/icons-material/ArrowDownward";
 import SwapVert from "@mui/icons-material/SwapVert";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
 
 // Material Kit 2 React components
 import MKBox from "components/MKBox";
@@ -83,6 +87,10 @@ function Presentation() {
   const [sortDirection, setSortDirection] = useState("asc");
   const [ohlcvData, setOhlcvData] = useState([]); // OHLCV 데이터 상태 추가
   const [chartLoading, setChartLoading] = useState(false); // 차트 로딩 상태
+  const [indexData, setIndexData] = useState([]); // 인덱스 데이터 상태 추가
+  const [indexOhlcvData, setIndexOhlcvData] = useState([]); // 인덱스 OHLCV 데이터 상태 추가
+  const [selectedIndexCode, setSelectedIndexCode] = useState(''); // 선택된 인덱스 코드
+  const [analysisData, setAnalysisData] = useState([]); // 주식 분석 데이터 상태 추가
   
   // 실제 OHLCV 데이터 가져오기
   const fetchOHLCVData = async (stockCode) => {
@@ -105,21 +113,192 @@ function Presentation() {
       console.error('OHLCV 데이터 로드 실패:', err);
       setOhlcvData([]);
       return [];
-    } finally {
-      setChartLoading(false);
     }
   };
 
-  // 캔들스틱 차트 데이터 생성
-  const createCandlestickData = (ohlcvData) => {
+  // 종목 관련 인덱스 데이터 가져오기
+  const fetchStockIndexData = async (stockCode) => {
+    if (!stockCode) return [];
+    
+    try {
+      const response = await fetch(`http://218.152.32.218:8000/api/find_stock_index?code=${stockCode}&limit=10`);
+      if (!response.ok) {
+        throw new Error('인덱스 데이터를 가져올 수 없습니다');
+      }
+      const result = await response.json();
+      const data = result.data || [];
+      setIndexData(data);
+      
+      // 첫 번째 인덱스를 기본 선택
+      if (data.length > 0) {
+        setSelectedIndexCode(data[0].code);
+        await fetchIndexOHLCVData(data[0].code);
+      } else {
+        setSelectedIndexCode('');
+        setIndexOhlcvData([]);
+      }
+      
+      return data;
+    } catch (err) {
+      console.error('인덱스 데이터 로드 실패:', err);
+      setIndexData([]);
+      setSelectedIndexCode('');
+      return [];
+    }
+  };
+
+  // 인덱스 OHLCV 데이터 가져오기
+  const fetchIndexOHLCVData = async (indexCode) => {
+    if (!indexCode) return [];
+    
+    try {
+      const response = await fetch(`http://218.152.32.218:8000/api/find_index_ohlcv?code=${indexCode}&limit=63`);
+      if (!response.ok) {
+        throw new Error('인덱스 OHLCV 데이터를 가져올 수 없습니다');
+      }
+      const result = await response.json();
+      const data = result.data || [];
+      
+      // 날짜순으로 정렬 (오래된 날짜부터)
+      const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+      setIndexOhlcvData(sortedData);
+      return sortedData;
+    } catch (err) {
+      console.error('인덱스 OHLCV 데이터 로드 실패:', err);
+      setIndexOhlcvData([]);
+      return [];
+    }
+  };
+
+  // 주식 분석 데이터 가져오기
+  const fetchStockAnalysisData = async (stockCode) => {
+    if (!stockCode) return [];
+    
+    try {
+      const response = await fetch(`http://218.152.32.218:8000/api/find_stock_analysis?code=${stockCode}&limit=63`);
+      if (!response.ok) {
+        throw new Error('주식 분석 데이터를 가져올 수 없습니다');
+      }
+      const result = await response.json();
+      const data = result.data || [];
+      
+      // 날짜순으로 정렬 (오래된 날짜부터)
+      const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+      setAnalysisData(sortedData);
+      return sortedData;
+    } catch (err) {
+      console.error('주식 분석 데이터 로드 실패:', err);
+      setAnalysisData([]);
+      return [];
+    }
+  };
+
+  // 캔들스틱 차트 데이터 생성 (이동평균선 포함)
+  const createCandlestickData = (ohlcvData, analysisData) => {
     if (!ohlcvData || ohlcvData.length === 0) return null;
+
+    const datasets = [
+      {
+        label: '캔들스틱',
+        type: 'candlestick',
+        data: ohlcvData.map(item => ({
+          x: new Date(item.date).getTime(),
+          o: item.open,
+          h: item.high,
+          l: item.low,
+          c: item.close
+        })),
+        borderColor: function(context) {
+          const data = context.parsed;
+          return data.c >= data.o ? '#4caf50' : '#f44336';
+        },
+        backgroundColor: function(context) {
+          const data = context.parsed;
+          return data.c >= data.o ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)';
+        },
+        color: {
+          up: '#4caf50',
+          down: '#f44336',
+          unchanged: '#999'
+        },
+        order: 1
+      }
+    ];
+
+    // 이동평균선 데이터 추가
+    if (analysisData && analysisData.length > 0) {
+      console.log('Analysis data:', analysisData.slice(0, 3)); // 디버깅용 로그
+      // 50일선
+      datasets.push({
+        label: '50일선',
+        type: 'line',
+        data: analysisData
+          .filter(item => item.ma50 !== null && item.ma50 !== undefined && !isNaN(item.ma50))
+          .map(item => ({
+            x: new Date(item.date).getTime(),
+            y: item.ma50
+          })),
+        borderColor: '#ff6b35',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.1,
+        order: 2
+      });
+
+      // 150일선
+      datasets.push({
+        label: '150일선',
+        type: 'line',
+        data: analysisData
+          .filter(item => item.ma150 !== null && item.ma150 !== undefined && !isNaN(item.ma150))
+          .map(item => ({
+            x: new Date(item.date).getTime(),
+            y: item.ma150
+          })),
+        borderColor: '#f7931e',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.1,
+        order: 3
+      });
+
+      // 200일선
+      datasets.push({
+        label: '200일선',
+        type: 'line',
+        data: analysisData
+          .filter(item => item.ma200 !== null && item.ma200 !== undefined && !isNaN(item.ma200))
+          .map(item => ({
+            x: new Date(item.date).getTime(),
+            y: item.ma200
+          })),
+        borderColor: '#9c27b0',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.1,
+        order: 4
+      });
+    }
+
+    return { datasets };
+  };
+
+  // 인덱스 캔들스틱 차트 데이터 생성
+  const createIndexCandlestickData = (indexOhlcvData) => {
+    if (!indexOhlcvData || indexOhlcvData.length === 0) return null;
 
     return {
       datasets: [
         {
-          label: '캔들스틱',
+          label: '인덱스 캔들스틱',
           type: 'candlestick',
-          data: ohlcvData.map(item => ({
+          data: indexOhlcvData.map(item => ({
             x: new Date(item.date).getTime(),
             o: item.open,
             h: item.high,
@@ -128,22 +307,22 @@ function Presentation() {
           })),
           borderColor: function(context) {
             const data = context.parsed;
-            return data.c >= data.o ? '#4caf50' : '#f44336';
+            return data.c >= data.o ? '#2196f3' : '#ff9800';
           },
           backgroundColor: function(context) {
             const data = context.parsed;
-            return data.c >= data.o ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)';
+            return data.c >= data.o ? 'rgba(33, 150, 243, 0.8)' : 'rgba(255, 152, 0, 0.8)';
           },
           color: {
-            up: '#4caf50',
-            down: '#f44336',
+            up: '#2196f3',
+            down: '#ff9800',
             unchanged: '#999'
           }
         }
       ]
     };
   };
-
+  
   // 거래량 차트 데이터 생성
   const createVolumeData = (ohlcvData) => {
     if (!ohlcvData || ohlcvData.length === 0) return null;
@@ -196,9 +375,22 @@ function Presentation() {
 
   // 선택된 종목이 변경될 때 OHLCV 데이터 가져오기
   useEffect(() => {
-    if (selectedStock && selectedStock.code) {
-      fetchOHLCVData(selectedStock.code);
-    }
+    const loadData = async () => {
+      if (selectedStock && selectedStock.code) {
+        setChartLoading(true);
+        try {
+          await Promise.all([
+            fetchOHLCVData(selectedStock.code),
+            fetchStockIndexData(selectedStock.code),
+            fetchStockAnalysisData(selectedStock.code)
+          ]);
+        } finally {
+          setChartLoading(false);
+        }
+      }
+    };
+    
+    loadData();
   }, [selectedStock]);
 
   // 테이블 헤더 정의 (name, rsRank, 당기매출, 당기영업이익 사용)
@@ -237,9 +429,21 @@ function Presentation() {
     setSelectedStock(stock);
   };
 
+  // 인덱스 선택 핸들러
+  const handleIndexChange = async (event) => {
+    const indexCode = event.target.value;
+    setSelectedIndexCode(indexCode);
+    if (indexCode) {
+      await fetchIndexOHLCVData(indexCode);
+    } else {
+      setIndexOhlcvData([]);
+    }
+  };
+
   // 실제 OHLCV 데이터로 차트 생성
-  const chartData = createCandlestickData(ohlcvData);
+  const chartData = createCandlestickData(ohlcvData, analysisData);
   const volumeData = createVolumeData(ohlcvData);
+  const indexChartData = createIndexCandlestickData(indexOhlcvData);
 
   const chartOptions = {
     responsive: true,
@@ -249,10 +453,10 @@ function Presentation() {
     },
     layout: {
       padding: {
-        top: 20,
-        bottom: 20,
-        left: 30,
-        right: 30
+        top: 5,
+        bottom: 5,
+        left: 10,
+        right: 10
       }
     },
     scales: {
@@ -271,11 +475,11 @@ function Presentation() {
         ticks: {
           color: '#666',
           font: {
-            size: 14
+            size: 12
           },
           maxRotation: 0,
           minRotation: 0,
-          padding: 10
+          padding: 5
         }
       },
       y: {
@@ -287,11 +491,139 @@ function Presentation() {
         ticks: {
           color: '#666',
           font: {
-            size: 14
+            size: 12
           },
-          padding: 15,
+          padding: 8,
           callback: function(value) {
             return new Intl.NumberFormat('ko-KR').format(Math.round(value));
+          }
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: {
+          filter: function(legendItem) {
+            // 캔들스틱은 범례에서 제외
+            return legendItem.text !== '캔들스틱';
+          },
+          usePointStyle: true,
+          pointStyle: 'line',
+          font: {
+            size: 10
+          },
+          color: '#666'
+        }
+      },
+      tooltip: {
+        callbacks: {
+          title: function(context) {
+            return new Date(context[0].parsed.x).toLocaleDateString('ko-KR');
+          },
+          beforeBody: function(context) {
+            const candleData = context.find(ctx => ctx.dataset.label === '캔들스틱');
+            if (!candleData || !candleData.parsed.o) return '';
+            
+            const data = candleData.parsed;
+            const changePercent = ((data.c - data.o) / data.o * 100).toFixed(2);
+            return `당일변화: ${changePercent > 0 ? '+' : ''}${changePercent}%`;
+          },
+          label: function(context) {
+            if (context.dataset.label === '캔들스틱') {
+              const data = context.parsed;
+              if (!data) return '';
+              
+              return [
+                `시가: ${new Intl.NumberFormat('ko-KR').format(data.o)}`,
+                `고가: ${new Intl.NumberFormat('ko-KR').format(data.h)}`,
+                `저가: ${new Intl.NumberFormat('ko-KR').format(data.l)}`,
+                `종가: ${new Intl.NumberFormat('ko-KR').format(data.c)}`
+              ];
+            } else {
+              // 이동평균선
+              return `${context.dataset.label}: ${new Intl.NumberFormat('ko-KR').format(Math.round(context.parsed.y))}`;
+            }
+          }
+        },
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#667eea',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: true,
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index',
+    }
+  };
+
+  const indexChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: {
+      duration: 300
+    },
+    layout: {
+      padding: {
+        top: 5,
+        bottom: 5,
+        left: 10,
+        right: 10
+      }
+    },
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit: 'day',
+          displayFormats: {
+            day: 'MM/dd'
+          }
+        },
+        grid: {
+          display: true,
+          color: 'rgba(0,0,0,0.05)',
+        },
+        ticks: {
+          color: '#666',
+          font: {
+            size: 10
+          },
+          maxRotation: 0,
+          minRotation: 0,
+          padding: 5
+        }
+      },
+      y: {
+        beginAtZero: false,
+        grace: '3%',
+        grid: {
+          color: 'rgba(0,0,0,0.05)',
+        },
+        ticks: {
+          color: '#666',
+          font: {
+            size: 10
+          },
+          padding: 8,
+          callback: function(value) {
+            return new Intl.NumberFormat('ko-KR').format(Math.round(value));
+          }
+        },
+        title: {
+          display: true,
+          text: selectedIndexCode && indexData.length > 0 
+            ? indexData.find(idx => idx.code === selectedIndexCode)?.name || '인덱스'
+            : '인덱스',
+          color: '#666',
+          font: {
+            size: 10,
+            weight: 'bold'
           }
         }
       }
@@ -327,7 +659,7 @@ function Presentation() {
         backgroundColor: 'rgba(0,0,0,0.9)',
         titleColor: '#fff',
         bodyColor: '#fff',
-        borderColor: '#667eea',
+        borderColor: '#2196f3',
         borderWidth: 1,
         cornerRadius: 8,
         displayColors: false,
@@ -338,7 +670,7 @@ function Presentation() {
       mode: 'index',
     }
   };
-
+  
   const volumeOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -347,10 +679,10 @@ function Presentation() {
     },
     layout: {
       padding: {
-        top: 10,
-        bottom: 20,
-        left: 30,
-        right: 30
+        top: 5,
+        bottom: 5,
+        left: 10,
+        right: 10
       }
     },
     scales: {
@@ -369,11 +701,11 @@ function Presentation() {
         ticks: {
           color: '#666',
           font: {
-            size: 12
+            size: 10
           },
           maxRotation: 0,
           minRotation: 0,
-          padding: 10
+          padding: 5
         }
       },
       y: {
@@ -384,9 +716,9 @@ function Presentation() {
         ticks: {
           color: '#666',
           font: {
-            size: 12
+            size: 10
           },
-          padding: 15,
+          padding: 8,
           callback: function(value) {
             if (value >= 1000000) {
               return (value / 1000000).toFixed(1) + 'M';
@@ -401,7 +733,7 @@ function Presentation() {
           text: '거래량',
           color: '#666',
           font: {
-            size: 12,
+            size: 10,
             weight: 'bold'
           }
         }
@@ -454,7 +786,7 @@ function Presentation() {
         {/* 네비게이션 바 높이만큼 패딩 추가 */}
         <Box sx={{ height: "80px", flexShrink: 0 }} />
         
-        <Grid container spacing={1} sx={{ height: "calc(100vh - 80px)", p: 1 }}>
+        <Grid container spacing={0.5} sx={{ height: "calc(100vh - 80px)", p: 0.5 }}>
           {/* 왼쪽 차트 영역 */}
           <Grid item xs={12} md={9} sx={{ 
             height: "100%",
@@ -474,14 +806,14 @@ function Presentation() {
               }}
             >
               {/* 헤더 부분 */}
-              <MKBox sx={{ p: 2, flexShrink: 0, borderBottom: "1px solid #e0e0e0" }}>
+              <MKBox sx={{ p: 1, flexShrink: 0, borderBottom: "1px solid #e0e0e0" }}>
                 {/* <MKTypography variant="h5" textAlign="center">
                   {selectedStock ? `${selectedStock.name || '선택된 종목'} 차트` : '차트'}
                 </MKTypography> */}
                 
                 {/* 선택된 종목 정보 */}
                 {selectedStock && (
-                  <MKBox mt={1} p={1.5} sx={{ backgroundColor: "#f5f5f5", borderRadius: 1 }}>
+                  <MKBox mt={0.5} p={1} sx={{ backgroundColor: "#f5f5f5", borderRadius: 1 }}>
                     <Grid container spacing={1}>
                       {Object.entries(selectedStock).slice(0, 4).map(([key, value], index) => (
                         <Grid item xs={6} sm={3} key={index}>
@@ -577,12 +909,12 @@ function Presentation() {
                         </MKTypography>
                       </MKBox>
                     ) : chartData && ohlcvData.length > 0 ? (
-                      <MKBox sx={{ p: 2 }}>
+                      <MKBox sx={{ p: 0.5 }}>
                         {/* 차트 헤더 */}
                         <MKBox
                           sx={{
-                            mb: 2,
-                            pb: 1,
+                            mb: 0.5,
+                            pb: 0.5,
                             borderBottom: "1px solid #f0f0f0",
                             display: "flex",
                             justifyContent: "space-between",
@@ -630,28 +962,118 @@ function Presentation() {
 
                         {/* 캔들스틱 차트 */}
                         <MKBox sx={{ 
-                          height: "500px",
+                          height: "450px",
                           backgroundColor: "#ffffff",
                           border: "1px solid #e0e0e0",
                           borderRadius: 1,
-                          p: 1,
-                          mb: 2
+                          p: 0.5,
+                          mb: 1
                         }}>
                           <Chart type="candlestick" data={chartData} options={chartOptions} />
                         </MKBox>
                         
                         {/* 거래량 차트 */}
                         <MKBox sx={{ 
-                          height: "200px",
+                          height: "150px",
                           backgroundColor: "#ffffff",
                           border: "1px solid #e0e0e0",
                           borderRadius: 1,
-                          p: 1
+                          p: 0.5,
+                          mb: 1
                         }}>
                           {volumeData && (
                             <Chart type="bar" data={volumeData} options={volumeOptions} />
                           )}
                         </MKBox>
+                        
+                        {/* 인덱스 차트 */}
+                        {indexData.length > 0 && (
+                          <MKBox sx={{ 
+                            height: "250px",
+                            backgroundColor: "#ffffff",
+                            border: "1px solid #e0e0e0",
+                            borderRadius: 1,
+                            p: 0.5
+                          }}>
+                            <MKBox sx={{ 
+                              p: 0.5, 
+                              borderBottom: "1px solid #f0f0f0", 
+                              mb: 0.5,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center"
+                            }}>
+                              <MKBox>
+                                <MKTypography variant="subtitle1" fontWeight="bold" color="#2196f3">
+                                  관련 인덱스
+                                </MKTypography>
+                                <MKTypography variant="caption" color="text.secondary">
+                                  {selectedIndexCode && indexData.length > 0 
+                                    ? `${indexData.find(idx => idx.code === selectedIndexCode)?.market || ''} • ${selectedIndexCode}`
+                                    : '인덱스를 선택하세요'
+                                  }
+                                </MKTypography>
+                              </MKBox>
+                              
+                              <FormControl size="small" sx={{ minWidth: 200 }}>
+                                <InputLabel id="index-select-label">인덱스 선택</InputLabel>
+                                <Select
+                                  labelId="index-select-label"
+                                  value={selectedIndexCode}
+                                  label="인덱스 선택"
+                                  onChange={handleIndexChange}
+                                  sx={{
+                                    backgroundColor: 'white',
+                                    '& .MuiOutlinedInput-notchedOutline': {
+                                      borderColor: '#2196f3',
+                                    },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                      borderColor: '#1976d2',
+                                    },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                      borderColor: '#2196f3',
+                                    },
+                                  }}
+                                >
+                                  {indexData.map((index) => (
+                                    <MenuItem key={index.code} value={index.code}>
+                                      <MKBox>
+                                        <MKTypography variant="body2" fontWeight="bold">
+                                          {index.name}
+                                        </MKTypography>
+                                        <MKTypography variant="caption" color="text.secondary">
+                                          {index.market} • {index.code}
+                                        </MKTypography>
+                                      </MKBox>
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                            </MKBox>
+                            
+                            {indexChartData && indexOhlcvData.length > 0 ? (
+                              <MKBox sx={{ height: "calc(100% - 60px)" }}>
+                                <Chart type="candlestick" data={indexChartData} options={indexChartOptions} />
+                              </MKBox>
+                            ) : (
+                              <MKBox
+                                sx={{
+                                  height: "calc(100% - 80px)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexDirection: "column",
+                                  color: "#666"
+                                }}
+                              >
+                                <MKTypography variant="body1" mb={1}>
+                                  {selectedIndexCode ? '인덱스 데이터를 로드하는 중...' : '인덱스를 선택하세요'}
+                                </MKTypography>
+                                {selectedIndexCode && <CircularProgress size={24} />}
+                              </MKBox>
+                            )}
+                          </MKBox>
+                        )}
                       </MKBox>
                     ) : (
                       <MKBox
@@ -697,7 +1119,7 @@ function Presentation() {
               }}
             >
               {/* 헤더 부분 */}
-              <MKBox sx={{ p: 2, flexShrink: 0, borderBottom: "1px solid #e0e0e0" }}>
+              <MKBox sx={{ p: 1, flexShrink: 0, borderBottom: "1px solid #e0e0e0" }}>
                 <MKTypography variant="h5" textAlign="center">
                   종목 목록 ({stockData.length}개)
                 </MKTypography>
@@ -737,7 +1159,7 @@ function Presentation() {
                   <MKBox
                     sx={{
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      p: 2,
+                      p: 1,
                       display: 'flex',
                       alignItems: 'center',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -795,7 +1217,7 @@ function Presentation() {
                         key={row.code || rowIndex}
                         onClick={() => handleStockClick(row)}
                         sx={{
-                          p: 1,
+                          p: 0.5,
                           borderBottom: rowIndex === stockData.length - 1 ? 'none' : '1px solid #f0f0f0',
                           cursor: 'pointer',
                           transition: 'all 0.2s ease',
