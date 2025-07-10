@@ -1595,8 +1595,15 @@ function Presentation() {
                 <TableContainer component={Paper} sx={{ boxShadow: 1, mb: 2 }}>
                   <Table size="small">
                     <TableHead>
-                      <TableRow sx={{ bgcolor: 'grey.50' }}>
-                        <TableCell sx={{ fontWeight: 'bold', minWidth: 120, paddingRight: 3 }}>
+                      <TableRow sx={{ bgcolor: 'grey.50', display: 'flex', width: '100%' }}>
+                        <TableCell sx={{ 
+                          fontWeight: 'bold', 
+                          minWidth: 120, 
+                          paddingRight: 3,
+                          flex: 2,
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
                           항목
                         </TableCell>
                         {/* 최신 4개 분기를 년도-분기 순으로 내림차순 정렬 */}
@@ -1611,7 +1618,13 @@ function Presentation() {
                           })
                           .slice(0, 4)
                           .map(period => (
-                            <TableCell key={period} align="right" sx={{ fontWeight: 'bold', minWidth: 100 }}>
+                            <TableCell key={period} sx={{ 
+                              fontWeight: 'bold', 
+                              minWidth: 100,
+                              flex: 1,
+                              textAlign: 'right',
+                              paddingRight: 2
+                            }}>
                               {period}
                             </TableCell>
                           ))}
@@ -1621,8 +1634,15 @@ function Presentation() {
                       {/* 손익계산서 항목들 */}
                       {[...new Set(financialData.filter(item => item.statement_type === '손익계산서').map(item => item.account_name))]
                         .map(accountName => (
-                          <TableRow key={accountName} sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.25' } }}>
-                            <TableCell sx={{ fontWeight: 'medium', minWidth: 120, paddingRight: 3 }}>
+                          <TableRow key={accountName} sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.25' }, display: 'flex', width: '100%' }}>
+                            <TableCell sx={{ 
+                              fontWeight: 'medium', 
+                              minWidth: 120, 
+                              paddingRight: 3,
+                              flex: 2,
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
                               {accountName}
                             </TableCell>
                             {[...new Set(financialData.map(item => `${item.year} ${item.quarter}`))]
@@ -1644,7 +1664,12 @@ function Presentation() {
                                   d.statement_type === '손익계산서'
                                 );
                                 return (
-                                  <TableCell key={period} align="right" sx={{ minWidth: 100 }}>
+                                  <TableCell key={period} sx={{ 
+                                    minWidth: 100,
+                                    flex: 1,
+                                    textAlign: 'right',
+                                    paddingRight: 2
+                                  }}>
                                     {item ? formatFinancialAmount(item.amount) : '-'}
                                   </TableCell>
                                 );
@@ -1664,8 +1689,15 @@ function Presentation() {
                 <TableContainer component={Paper} sx={{ boxShadow: 1 }}>
                   <Table size="small">
                     <TableHead>
-                      <TableRow sx={{ bgcolor: 'grey.50' }}>
-                        <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}>
+                      <TableRow sx={{ bgcolor: 'grey.50', display: 'flex', width: '100%' }}>
+                        <TableCell sx={{ 
+                          fontWeight: 'bold', 
+                          minWidth: 120,
+                          paddingRight: 3,
+                          flex: 2,
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
                           항목
                         </TableCell>
                         {/* 최신 4개 분기를 년도-분기 순으로 내림차순 정렬 */}
@@ -1680,7 +1712,13 @@ function Presentation() {
                           })
                           .slice(0, 4)
                           .map(period => (
-                            <TableCell key={period} align="right" sx={{ fontWeight: 'bold', minWidth: 100 }}>
+                            <TableCell key={period} sx={{ 
+                              fontWeight: 'bold', 
+                              minWidth: 100,
+                              flex: 1,
+                              textAlign: 'right',
+                              paddingRight: 2
+                            }}>
                               {period}
                             </TableCell>
                           ))}
@@ -1689,8 +1727,15 @@ function Presentation() {
                     <TableBody>
                       {[...new Set(financialData.filter(item => item.statement_type === '재무상태표').map(item => item.account_name))]
                         .map(accountName => (
-                          <TableRow key={accountName} sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.25' } }}>
-                            <TableCell sx={{ fontWeight: 'medium', minWidth: 120, paddingRight: 3 }}>
+                          <TableRow key={accountName} sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.25' }, display: 'flex', width: '100%' }}>
+                            <TableCell sx={{ 
+                              fontWeight: 'medium', 
+                              minWidth: 120, 
+                              paddingRight: 3,
+                              flex: 2,
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
                               {accountName}
                             </TableCell>
                             {[...new Set(financialData.map(item => `${item.year} ${item.quarter}`))]
@@ -1712,7 +1757,12 @@ function Presentation() {
                                   d.statement_type === '재무상태표'
                                 );
                                 return (
-                                  <TableCell key={period} align="right" sx={{ minWidth: 100 }}>
+                                  <TableCell key={period} sx={{ 
+                                    minWidth: 100,
+                                    flex: 1,
+                                    textAlign: 'right',
+                                    paddingRight: 2
+                                  }}>
                                     {item ? formatFinancialAmount(item.amount) : '-'}
                                   </TableCell>
                                 );
