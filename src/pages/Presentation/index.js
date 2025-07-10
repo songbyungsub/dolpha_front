@@ -382,6 +382,96 @@ function Presentation() {
     };
   };
 
+  // RS Rank 차트 데이터 생성
+  const createRSRankData = (analysisData) => {
+    if (!analysisData || analysisData.length === 0) return null;
+
+    return {
+      datasets: [
+        {
+          label: 'RS Rank',
+          type: 'line',
+          data: analysisData
+            .filter(item => item.rsRank !== null && item.rsRank !== undefined && !isNaN(item.rsRank))
+            .map(item => ({
+              x: new Date(item.date).getTime(),
+              y: item.rsRank
+            })),
+          borderColor: '#667eea',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.1
+        },
+        {
+          label: 'RS Rank 1M',
+          type: 'line',
+          data: analysisData
+            .filter(item => item.rsRank1m !== null && item.rsRank1m !== undefined && !isNaN(item.rsRank1m))
+            .map(item => ({
+              x: new Date(item.date).getTime(),
+              y: item.rsRank1m
+            })),
+          borderColor: '#ff6b35',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0.1
+        },
+        {
+          label: 'RS Rank 3M',
+          type: 'line',
+          data: analysisData
+            .filter(item => item.rsRank3m !== null && item.rsRank3m !== undefined && !isNaN(item.rsRank3m))
+            .map(item => ({
+              x: new Date(item.date).getTime(),
+              y: item.rsRank3m
+            })),
+          borderColor: '#f7931e',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0.1
+        },
+        {
+          label: 'RS Rank 6M',
+          type: 'line',
+          data: analysisData
+            .filter(item => item.rsRank6m !== null && item.rsRank6m !== undefined && !isNaN(item.rsRank6m))
+            .map(item => ({
+              x: new Date(item.date).getTime(),
+              y: item.rsRank6m
+            })),
+          borderColor: '#9c27b0',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0.1
+        },
+        {
+          label: 'RS Rank 12M',
+          type: 'line',
+          data: analysisData
+            .filter(item => item.rsRank12m !== null && item.rsRank12m !== undefined && !isNaN(item.rsRank12m))
+            .map(item => ({
+              x: new Date(item.date).getTime(),
+              y: item.rsRank12m
+            })),
+          borderColor: '#2196f3',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0.1
+        }
+      ]
+    };
+  };
+
   // API 데이터 가져오기
   useEffect(() => {
     const fetchStockData = async () => {
@@ -529,6 +619,7 @@ function Presentation() {
   const chartData = createCandlestickData(ohlcvData, analysisData);
   const volumeData = createVolumeData(ohlcvData);
   const indexChartData = createIndexCandlestickData(indexOhlcvData);
+  const rsRankData = createRSRankData(analysisData);
 
   const chartOptions = {
     responsive: true,
@@ -844,6 +935,110 @@ function Presentation() {
         borderWidth: 1,
         cornerRadius: 8,
         displayColors: false,
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index',
+    }
+  };
+
+  const rsRankOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: {
+      duration: 300
+    },
+    layout: {
+      padding: {
+        top: 5,
+        bottom: 5,
+        left: 10,
+        right: 10
+      }
+    },
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit: 'day',
+          displayFormats: {
+            day: 'MM/dd'
+          }
+        },
+        grid: {
+          display: true,
+          color: 'rgba(0,0,0,0.05)',
+        },
+        ticks: {
+          color: '#666',
+          font: {
+            size: 10
+          },
+          maxRotation: 0,
+          minRotation: 0,
+          padding: 5
+        }
+      },
+      y: {
+        min: 0,
+        max: 100,
+        grid: {
+          color: 'rgba(0,0,0,0.05)',
+        },
+        ticks: {
+          color: '#666',
+          font: {
+            size: 10
+          },
+          padding: 8,
+          stepSize: 20,
+          callback: function(value) {
+            return value;
+          }
+        },
+        title: {
+          display: true,
+          text: 'RS Rank (%)',
+          color: '#666',
+          font: {
+            size: 10,
+            weight: 'bold'
+          }
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'line',
+          font: {
+            size: 9
+          },
+          color: '#666',
+          boxWidth: 15,
+          padding: 8
+        }
+      },
+      tooltip: {
+        callbacks: {
+          title: function(context) {
+            return new Date(context[0].parsed.x).toLocaleDateString('ko-KR');
+          },
+          label: function(context) {
+            return `${context.dataset.label}: ${context.parsed.y}`;
+          }
+        },
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#667eea',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: true,
       }
     },
     interaction: {
@@ -1263,6 +1458,56 @@ function Presentation() {
                                   {selectedIndexCode ? '인덱스 데이터를 로드하는 중...' : '인덱스를 선택하세요'}
                                 </MKTypography>
                                 {selectedIndexCode && <CircularProgress size={24} />}
+                              </MKBox>
+                            )}
+                          </MKBox>
+                        )}
+
+                        {/* RS Rank 차트 */}
+                        {analysisData.length > 0 && (
+                          <MKBox sx={{ 
+                            height: "300px",
+                            backgroundColor: "#ffffff",
+                            border: "1px solid #e0e0e0",
+                            borderRadius: 1,
+                            p: 0.5
+                          }}>
+                            <MKBox sx={{ 
+                              p: 0.5, 
+                              borderBottom: "1px solid #f0f0f0", 
+                              mb: 0.5,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center"
+                            }}>
+                              <MKBox>
+                                <MKTypography variant="h6" fontWeight="bold" color="#667eea">
+                                  RS Rank 추이
+                                </MKTypography>
+                                <MKTypography variant="caption" color="text.secondary">
+                                  상대강도 순위 (0-100%)
+                                </MKTypography>
+                              </MKBox>
+                            </MKBox>
+                            
+                            {rsRankData ? (
+                              <MKBox sx={{ height: "calc(100% - 60px)" }}>
+                                <Chart type="line" data={rsRankData} options={rsRankOptions} />
+                              </MKBox>
+                            ) : (
+                              <MKBox
+                                sx={{
+                                  height: "calc(100% - 60px)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexDirection: "column",
+                                  color: "#666"
+                                }}
+                              >
+                                <MKTypography variant="body1">
+                                  RS Rank 데이터를 로드하는 중...
+                                </MKTypography>
                               </MKBox>
                             )}
                           </MKBox>
