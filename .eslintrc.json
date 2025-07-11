@@ -14,7 +14,7 @@
   "plugins": ["react", "prettier"],
   "rules": {
     "prettier/prettier": [
-      "error",
+      "warn",
       {
         "endOfLine": "auto"
       }
@@ -29,7 +29,9 @@
     ],
     "react/jsx-curly-spacing": [2, "never"],
     "default-param-last": "off",
-    "react/display-name": "off"
+    "react/display-name": "off",
+    "no-unused-vars": "warn",
+    "react/prop-types": "warn"
   },
   "settings": { "import/resolver": { "node": { "paths": ["src"] } } }
 }

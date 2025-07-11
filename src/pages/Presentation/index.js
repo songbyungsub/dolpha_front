@@ -154,7 +154,8 @@ function Presentation() {
     
     try {
       setChartLoading(true);
-      const response = await fetch(`http://218.152.32.218:8000/api/find_stock_ohlcv?code=${stockCode}&limit=63`);
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBaseUrl}/api/find_stock_ohlcv?code=${stockCode}&limit=63`);
       if (!response.ok) {
         throw new Error('OHLCV 데이터를 가져올 수 없습니다');
       }
@@ -177,7 +178,8 @@ function Presentation() {
     if (!stockCode) return [];
     
     try {
-      const response = await fetch(`http://218.152.32.218:8000/api/find_stock_index?code=${stockCode}&limit=10`);
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBaseUrl}/api/find_stock_index?code=${stockCode}&limit=10`);
       if (!response.ok) {
         throw new Error('인덱스 데이터를 가져올 수 없습니다');
       }
@@ -208,7 +210,8 @@ function Presentation() {
     if (!indexCode) return [];
     
     try {
-      const response = await fetch(`http://218.152.32.218:8000/api/find_index_ohlcv?code=${indexCode}&limit=63`);
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBaseUrl}/api/find_index_ohlcv?code=${indexCode}&limit=63`);
       if (!response.ok) {
         throw new Error('인덱스 OHLCV 데이터를 가져올 수 없습니다');
       }
@@ -231,7 +234,8 @@ function Presentation() {
     if (!stockCode) return [];
     
     try {
-      const response = await fetch(`http://218.152.32.218:8000/api/find_stock_analysis?code=${stockCode}&limit=63`);
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBaseUrl}/api/find_stock_analysis?code=${stockCode}&limit=63`);
       if (!response.ok) {
         throw new Error('주식 분석 데이터를 가져올 수 없습니다');
       }
@@ -255,7 +259,8 @@ function Presentation() {
     
     try {
       setFinancialLoading(true);
-      const response = await fetch(`http://218.152.32.218:8000/api/find_stock_financial?code=${stockCode}&limit=50`);
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBaseUrl}/api/find_stock_financial?code=${stockCode}&limit=50`);
       if (!response.ok) {
         throw new Error('재무제표 데이터를 가져올 수 없습니다');
       }
@@ -552,7 +557,8 @@ function Presentation() {
     const fetchStockData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://218.152.32.218:8000/api/find_stock_inMTT?format=json');
+        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiBaseUrl}/api/find_stock_inMTT?format=json`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -602,11 +608,11 @@ function Presentation() {
     const absValue = Math.abs(numValue);
     
     if (absValue >= 1000000000000) { // 조 단위 (1조 = 1,000,000,000,000)
-      return `${(numValue / 1000000000000).toFixed(1)}조`;
+      return `${(numValue / 1000000000000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}조`;
     } else if (absValue >= 100000000) { // 억 단위 (1억 = 100,000,000)
-      return `${(numValue / 100000000).toFixed(1)}억`;
+      return `${(numValue / 100000000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}억`;
     } else if (absValue >= 10000) { // 만 단위
-      return `${(numValue / 10000).toFixed(1)}만`;
+      return `${(numValue / 10000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}만`;
     } else {
       return numValue.toLocaleString();
     }
@@ -633,16 +639,19 @@ function Presentation() {
   const formatFinancialAmount = (amount) => {
     if (!amount || amount === 0) return '0';
     
-    const absAmount = Math.abs(amount);
+    const numValue = Number(amount);
+    if (isNaN(numValue)) return amount;
+
+    const absAmount = Math.abs(numValue);
     
     if (absAmount >= 1000000000000) { // 조 단위
-      return `${(amount / 1000000000000).toFixed(1)}조`;
+      return `${(numValue / 1000000000000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}조`;
     } else if (absAmount >= 100000000) { // 억 단위
-      return `${(amount / 100000000).toFixed(1)}억`;
+      return `${(numValue / 100000000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}억`;
     } else if (absAmount >= 10000) { // 만 단위
-      return `${(amount / 10000).toFixed(1)}만`;
+      return `${(numValue / 10000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}만`;
     } else {
-      return amount.toLocaleString();
+      return numValue.toLocaleString();
     }
   };
 
@@ -1675,10 +1684,10 @@ function Presentation() {
                         📈
                       </MKTypography>
                     </MKBox>
-                    <MKTypography variant="h6" color="text.secondary" textAlign="center">
+                    <MKTypography variant="h6" color="text" textAlign="center">
                       종목을 선택하세요
                     </MKTypography>
-                    <MKTypography variant="body2" color="text.secondary" textAlign="center">
+                    <MKTypography variant="body2" color="text" textAlign="center">
                       오른쪽 목록에서 종목을 클릭하면
                       <br />
                       캔들스틱 차트가 표시됩니다
@@ -1699,7 +1708,7 @@ function Presentation() {
                         }}
                       >
                         <CircularProgress size={40} />
-                        <MKTypography variant="body2" mt={2} color="text.secondary">
+                        <MKTypography variant="body2" mt={2} color="text">
                           차트 데이터를 로드하는 중...
                         </MKTypography>
                       </MKBox>
@@ -1717,10 +1726,10 @@ function Presentation() {
                           }}
                         >
                           {/* <MKBox>
-                            <MKTypography variant="h6" fontWeight="bold" color="#667eea">
+                            <MKTypography variant="h6" fontWeight="bold" color="info">
                               {selectedStock.name}
                             </MKTypography>
-                            <MKTypography variant="caption" color="text.secondary">
+                            <MKTypography variant="caption" color="text">
                               {selectedStock.code} • 최근 63일
                             </MKTypography>
                           </MKBox> */}
@@ -1740,7 +1749,7 @@ function Presentation() {
                                     )}
                                     <MKTypography 
                                       variant="body2" 
-                                      color={ohlcvData[ohlcvData.length - 1]?.close >= ohlcvData[ohlcvData.length - 2]?.close ? '#f44336' : '#2196f3'}
+                                      color={ohlcvData[ohlcvData.length - 1]?.close >= ohlcvData[ohlcvData.length - 2]?.close ? 'error' : 'info'}
                                       fontWeight="bold"
                                     >
                                       {Math.abs(
@@ -2073,7 +2082,7 @@ function Presentation() {
                                 {/* <MKTypography variant="subtitle1" fontWeight="bold" color="#2196f3">
                                   관련 인덱스
                                 </MKTypography> */}
-                                <MKTypography variant="caption" color="text.secondary">
+                                <MKTypography variant="caption" color="text">
                                   {selectedIndexCode && indexData.length > 0 
                                     ? `${indexData.find(idx => idx.code === selectedIndexCode)?.market || ''} • ${selectedIndexCode}`
                                     : '인덱스를 선택하세요'
@@ -2107,7 +2116,7 @@ function Presentation() {
                                         <MKTypography variant="body2" fontWeight="bold">
                                           {index.name}
                                         </MKTypography>
-                                        <MKTypography variant="caption" color="text.secondary">
+                                        <MKTypography variant="caption" color="text">
                                           {index.market} • {index.code}
                                         </MKTypography>
                                       </MKBox>
@@ -2159,10 +2168,10 @@ function Presentation() {
                               alignItems: "center"
                             }}>
                               <MKBox>
-                                <MKTypography variant="h6" fontWeight="bold" color="#667eea">
+                                <MKTypography variant="h6" fontWeight="bold" color="info">
                                   RS Rank 추이
                                 </MKTypography>
-                                <MKTypography variant="caption" color="text.secondary">
+                                <MKTypography variant="caption" color="text">
                                   상대강도 순위 (0-100%)
                                 </MKTypography>
                               </MKBox>
@@ -2305,7 +2314,7 @@ function Presentation() {
                         }}
                       >
                         <Grid container spacing={0}>
-                          <Grid item xs={5}>
+                          <Grid item xs={3.5}>
                             <MKTypography variant="subtitle2" color="white" fontWeight="bold">
                               종목명
                             </MKTypography>
@@ -2315,12 +2324,12 @@ function Presentation() {
                               RS순위
                             </MKTypography>
                           </Grid>
-                          <Grid item xs={2.5}>
+                          <Grid item xs={3}>
                             <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
                               당기매출
                             </MKTypography>
                           </Grid>
-                          <Grid item xs={2}>
+                          <Grid item xs={3}>
                             <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
                               영업이익
                             </MKTypography>
@@ -2375,12 +2384,12 @@ function Presentation() {
                             }}
                           >
                             <Grid container spacing={0} alignItems="center">
-                              <Grid item xs={5}>
+                              <Grid item xs={3.5}>
                                 <MKBox>
                                   <MKTypography 
                                     variant="body2" 
                                     fontWeight={selectedStock?.code === row.code ? "bold" : "medium"}
-                                    color={selectedStock?.code === row.code ? "#667eea" : "text.primary"}
+                                    color={selectedStock?.code === row.code ? "info" : "text"}
                                     sx={{
                                       fontSize: '0.8rem',
                                       lineHeight: 1.1,
@@ -2393,7 +2402,7 @@ function Presentation() {
                                   </MKTypography>
                                   <MKTypography 
                                     variant="caption" 
-                                    color="text.secondary"
+                                    color="text"
                                     sx={{ fontSize: '0.7rem' }}
                                   >
                                     {row.code || ''}
@@ -2418,41 +2427,35 @@ function Presentation() {
                                   />
                                 </MKBox>
                               </Grid>
-                              <Grid item xs={2.5}>
-                                <MKBox display="flex" justifyContent="center" alignItems="center" gap={0.3}>
-                                  {row['당기매출'] > 0 && (
-                                    <ArrowUpward sx={{ fontSize: '10px', color: '#f44336' }} />
-                                  )}
-                                  {row['당기매출'] < 0 && (
-                                    <ArrowDownward sx={{ fontSize: '10px', color: '#2196f3' }} />
-                                  )}
+                              <Grid item xs={3}>
+                                <MKBox display="flex" justifyContent="center" alignItems="center">
                                   <MKTypography 
                                     variant="body2" 
                                     textAlign="center"
-                                    color={row['당기매출'] > 0 ? '#f44336' : 
-                                           row['당기매출'] < 0 ? '#2196f3' : 'text.secondary'}
-                                    fontWeight="bold"
-                                    sx={{ fontSize: '0.75rem' }}
+                                    color={row['당기매출'] < 0 ? 'info' : 'text'}
+                                    fontWeight={row['당기매출'] < 0 ? 'bold' : 'bold'}
+                                    sx={{ 
+                                      fontSize: '0.75rem',
+                                      color: row['당기매출'] < 0 ? '#1976d2' : 'inherit',
+                                      fontWeight: row['당기매출'] < 0 ? 'bold' : 'bold'
+                                    }}
                                   >
                                     {formatNumber(row['당기매출']) || '0'}
                                   </MKTypography>
                                 </MKBox>
                               </Grid>
-                              <Grid item xs={2}>
-                                <MKBox display="flex" justifyContent="center" alignItems="center" gap={0.5}>
-                                  {row['당기영업이익'] > 0 && (
-                                    <ArrowUpward sx={{ fontSize: '12px', color: '#f44336' }} />
-                                  )}
-                                  {row['당기영업이익'] < 0 && (
-                                    <ArrowDownward sx={{ fontSize: '12px', color: '#2196f3' }} />
-                                  )}
+                              <Grid item xs={3}>
+                                <MKBox display="flex" justifyContent="center" alignItems="center">
                                   <MKTypography 
                                     variant="body2" 
                                     textAlign="center"
-                                    color={row['당기영업이익'] > 0 ? '#f44336' : 
-                                           row['당기영업이익'] < 0 ? '#2196f3' : 'text.secondary'}
-                                    fontWeight="bold"
-                                    sx={{ fontSize: '0.8rem' }}
+                                    color={row['당기영업이익'] < 0 ? 'info' : 'text'}
+                                    fontWeight={row['당기영업이익'] < 0 ? 'bold' : 'bold'}
+                                    sx={{ 
+                                      fontSize: '0.8rem',
+                                      color: row['당기영업이익'] < 0 ? '#1976d2' : 'inherit',
+                                      fontWeight: row['당기영업이익'] < 0 ? 'bold' : 'bold'
+                                    }}
                                   >
                                     {formatNumber(row['당기영업이익']) || '0'}
                                   </MKTypography>
@@ -2507,7 +2510,7 @@ function Presentation() {
                             🤖
                           </MKTypography>
                         </MKBox>
-                        <MKTypography variant="h6" color="text.primary" fontWeight="bold">
+                        <MKTypography variant="h6" color="text" fontWeight="bold">
                           자동매매 설정
                         </MKTypography>
                       </MKBox>
@@ -2566,19 +2569,6 @@ function Presentation() {
                               },
                             }}
                           />
-                          {horizontalLines.length > 0 && (
-                            <MKBox sx={{ 
-                              mt: 0.5,
-                              p: 0.5,
-                              backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                              borderRadius: 1,
-                              border: '1px solid rgba(102, 126, 234, 0.3)'
-                            }}>
-                              <MKTypography variant="caption" color="#667eea" fontWeight="bold">
-                                📈 차트에서 설정된 진입선: {horizontalLines.length}개
-                              </MKTypography>
-                            </MKBox>
-                          )}
                         </MKBox>
 
                         {/* 최대손실 */}
@@ -2666,7 +2656,7 @@ function Presentation() {
                             </MKTypography>
                             <MKTypography 
                               variant="caption" 
-                              color={Math.abs(positionSum - 100) < 0.01 ? 'success.main' : 'error.main'}
+                              color={Math.abs(positionSum - 100) < 0.01 ? 'success' : 'error'}
                               fontWeight="bold"
                             >
                               합계: {positionSum.toFixed(1)}%
@@ -2777,7 +2767,7 @@ function Presentation() {
                               border: '1px solid',
                               borderColor: 'error.main'
                             }}>
-                              <MKTypography variant="caption" color="error.main" fontWeight="bold">
+                              <MKTypography variant="caption" color="error" fontWeight="bold">
                                 ⚠️ 포지션의 합이 100%가 되어야 합니다. (현재: {positionSum.toFixed(1)}%)
                               </MKTypography>
                             </MKBox>
@@ -2791,6 +2781,7 @@ function Presentation() {
                             sx={{
                               flex: 1,
                               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              color: 'white',
                               '&:hover': {
                                 background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
                               },
@@ -2828,7 +2819,7 @@ function Presentation() {
                     justifyContent: "center",
                   }}
                 >
-                  <MKTypography color="text.secondary">
+                  <MKTypography color="text">
                     데이터가 없습니다.
                   </MKTypography>
                 </MKBox>
@@ -2862,7 +2853,7 @@ function Presentation() {
           </MKTypography>
           <IconButton
             onClick={handleCloseFinancialModal}
-            sx={{ color: 'text.secondary' }}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
           >
             <Close />
           </IconButton>
@@ -2880,7 +2871,7 @@ function Presentation() {
               }}
             >
               <CircularProgress size={40} />
-              <MKTypography variant="body2" mt={2} color="text.secondary">
+              <MKTypography variant="body2" mt={2} color="text">
                 재무제표 데이터를 로드하는 중...
               </MKTypography>
             </MKBox>
@@ -2888,7 +2879,7 @@ function Presentation() {
             <>
               {/* 손익계산서 */}
               <MKBox sx={{ mb: 3 }}>
-                <MKTypography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#667eea' }}>
+                <MKTypography variant="h6" fontWeight="bold" sx={{ mb: 2, color: 'info' }}>
                   손익계산서
                 </MKTypography>
                 <TableContainer component={Paper} sx={{ boxShadow: 1, mb: 2 }}>
@@ -2967,7 +2958,9 @@ function Presentation() {
                                     minWidth: 100,
                                     flex: 1,
                                     textAlign: 'right',
-                                    paddingRight: 2
+                                    paddingRight: 2,
+                                    color: item && item.amount < 0 ? '#1976d2' : 'inherit',
+                                    fontWeight: item && item.amount < 0 ? 'bold' : 'normal'
                                   }}>
                                     {item ? formatFinancialAmount(item.amount) : '-'}
                                   </TableCell>
@@ -2982,7 +2975,7 @@ function Presentation() {
 
               {/* 재무상태표 */}
               <MKBox sx={{ mb: 2 }}>
-                <MKTypography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#667eea' }}>
+                <MKTypography variant="h6" fontWeight="bold" sx={{ mb: 2, color: 'info' }}>
                   재무상태표
                 </MKTypography>
                 <TableContainer component={Paper} sx={{ boxShadow: 1 }}>
@@ -3060,7 +3053,9 @@ function Presentation() {
                                     minWidth: 100,
                                     flex: 1,
                                     textAlign: 'right',
-                                    paddingRight: 2
+                                    paddingRight: 2,
+                                    color: item && item.amount < 0 ? '#1976d2' : 'inherit',
+                                    fontWeight: item && item.amount < 0 ? 'bold' : 'normal'
                                   }}>
                                     {item ? formatFinancialAmount(item.amount) : '-'}
                                   </TableCell>
@@ -3083,17 +3078,17 @@ function Presentation() {
                 flexDirection: "column"
               }}
             >
-              <MKTypography variant="h6" color="text.secondary">
+              <MKTypography variant="h6" color="text">
                 재무제표 데이터가 없습니다
               </MKTypography>
-              <MKTypography variant="body2" color="text.secondary" mt={1}>
+              <MKTypography variant="body2" color="text" mt={1}>
                 선택된 종목의 재무제표 정보를 찾을 수 없습니다
               </MKTypography>
             </MKBox>
           )}
           
           <MKBox sx={{ mt: 2, p: 1, bgcolor: 'info.light', borderRadius: 1 }}>
-            <MKTypography variant="caption" color="info.dark">
+            <MKTypography variant="caption" color="info">
               * 금액 단위: 원 (조/억/만 단위로 표시)
             </MKTypography>
           </MKBox>

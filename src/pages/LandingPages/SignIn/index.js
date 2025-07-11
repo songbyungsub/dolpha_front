@@ -22,18 +22,15 @@ import { Link } from "react-router-dom";
 import Card from "@mui/material/Card";
 import Switch from "@mui/material/Switch";
 import Grid from "@mui/material/Grid";
-import MuiLink from "@mui/material/Link";
-
-// @mui icons
-import FacebookIcon from "@mui/icons-material/Facebook";
-import GitHubIcon from "@mui/icons-material/GitHub";
-import GoogleIcon from "@mui/icons-material/Google";
 
 // Material Kit 2 React components
 import MKBox from "components/MKBox";
 import MKTypography from "components/MKTypography";
 import MKInput from "components/MKInput";
 import MKButton from "components/MKButton";
+
+// Custom components
+import GoogleLoginButton from "components/GoogleLoginButton";
 
 // Material Kit 2 React example components
 import DefaultNavbar from "examples/Navbars/DefaultNavbar";
@@ -47,8 +44,38 @@ import bgImage from "assets/images/bg-sign-in-basic.jpeg";
 
 function SignInBasic() {
   const [rememberMe, setRememberMe] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSetRememberMe = () => setRememberMe(!rememberMe);
+
+  const handleGoogleSuccess = () => {
+    setError("");
+    // Google 로그인 성공 시 처리는 AuthCallback에서 담당
+  };
+
+  const handleGoogleError = (errorMessage) => {
+    setError(errorMessage);
+  };
+
+
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      // 일반 이메일 로그인 로직 (추후 구현)
+      // 현재는 Google 로그인만 지원
+      setError("현재 Google 로그인만 지원됩니다.");
+    } catch (error) {
+      setError("로그인 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -97,33 +124,53 @@ function SignInBasic() {
                 textAlign="center"
               >
                 <MKTypography variant="h4" fontWeight="medium" color="white" mt={1}>
-                  Sign in
+                  Dolpha 로그인
                 </MKTypography>
-                <Grid container spacing={3} justifyContent="center" sx={{ mt: 1, mb: 2 }}>
-                  <Grid item xs={2}>
-                    <MKTypography component={MuiLink} href="#" variant="body1" color="white">
-                      <FacebookIcon color="inherit" />
-                    </MKTypography>
-                  </Grid>
-                  <Grid item xs={2}>
-                    <MKTypography component={MuiLink} href="#" variant="body1" color="white">
-                      <GitHubIcon color="inherit" />
-                    </MKTypography>
-                  </Grid>
-                  <Grid item xs={2}>
-                    <MKTypography component={MuiLink} href="#" variant="body1" color="white">
-                      <GoogleIcon color="inherit" />
-                    </MKTypography>
-                  </Grid>
-                </Grid>
+                <MKTypography variant="body2" color="white" opacity={0.8} mt={1}>
+                  주식 자동매매 분석 시스템
+                </MKTypography>
               </MKBox>
               <MKBox pt={4} pb={3} px={3}>
-                <MKBox component="form" role="form">
+{error && (
+                  <MKBox mb={2} p={2} sx={{ backgroundColor: "#ffebee", borderRadius: 1 }}>
+                    <MKTypography variant="body2" color="error">
+                      {error}
+                    </MKTypography>
+                  </MKBox>
+                )}
+                
+<GoogleLoginButton
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  disabled={loading}
+                />
+                
+<MKBox sx={{ textAlign: "center", my: 3 }}>
+                  <MKTypography variant="body2" color="text">
+                    또는
+                  </MKTypography>
+                </MKBox>
+                
+                <MKBox component="form" role="form" onSubmit={handleEmailLogin}>
                   <MKBox mb={2}>
-                    <MKInput type="email" label="Email" fullWidth />
+                    <MKInput
+                      type="email"
+                      label="Email"
+                      fullWidth
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={loading}
+                    />
                   </MKBox>
                   <MKBox mb={2}>
-                    <MKInput type="password" label="Password" fullWidth />
+                    <MKInput
+                      type="password"
+                      label="Password"
+                      fullWidth
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading}
+                    />
                   </MKBox>
                   <MKBox display="flex" alignItems="center" ml={-1}>
                     <Switch checked={rememberMe} onChange={handleSetRememberMe} />
@@ -138,8 +185,14 @@ function SignInBasic() {
                     </MKTypography>
                   </MKBox>
                   <MKBox mt={4} mb={1}>
-                    <MKButton variant="gradient" color="info" fullWidth>
-                      sign in
+                    <MKButton
+                      variant="gradient"
+                      color="info"
+                      fullWidth
+                      type="submit"
+                      disabled={loading}
+                    >
+                      {loading ? "로그인 중..." : "이메일로 로그인"}
                     </MKButton>
                   </MKBox>
                   <MKBox mt={3} mb={1} textAlign="center">
