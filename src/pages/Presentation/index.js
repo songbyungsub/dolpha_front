@@ -41,6 +41,12 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import TextField from "@mui/material/TextField";
 
 // Material Kit 2 React components
 import MKBox from "components/MKBox";
@@ -101,6 +107,17 @@ function Presentation() {
   const [openFinancialModal, setOpenFinancialModal] = useState(false); // 재무제표 모달 상태
   const [financialData, setFinancialData] = useState([]); // 재무제표 데이터 상태
   const [financialLoading, setFinancialLoading] = useState(false); // 재무제표 로딩 상태
+  const [activeTab, setActiveTab] = useState(0); // 탭 상태 (0: 투자목록, 1: 자동매매)
+  
+  // 자동매매 관련 상태
+  const [tradingMode, setTradingMode] = useState('manual'); // 'manual' 또는 'turtle'
+  const [maxLoss, setMaxLoss] = useState('');
+  const [stopLoss, setStopLoss] = useState('');
+  const [takeProfit, setTakeProfit] = useState('');
+  const [pyramidingCount, setPyramidingCount] = useState(1);
+  const [entryPoint, setEntryPoint] = useState(''); // 단일 진입시점
+  const [pyramidingEntries, setPyramidingEntries] = useState(['']); // 피라미딩 진입시점 배열
+  const [positions, setPositions] = useState([100]); // 포지션 배열 (합이 100%가 되어야 함)
   
   // 실제 OHLCV 데이터 가져오기
   const fetchOHLCVData = async (stockCode) => {
@@ -614,6 +631,50 @@ function Presentation() {
       setIndexOhlcvData([]);
     }
   };
+
+  // 탭 변경 핸들러
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
+  // 자동매매 관련 핸들러
+  const handleTradingModeChange = (event) => {
+    setTradingMode(event.target.value);
+  };
+
+  const handlePyramidingCountChange = (event) => {
+    const count = parseInt(event.target.value) || 1;
+    setPyramidingCount(count);
+    
+    // 포지션 배열 크기 조정
+    const currentSum = positions.reduce((sum, pos) => sum + (parseFloat(pos) || 0), 0);
+    const avgPosition = currentSum / count;
+    const newPositions = Array(count).fill(0).map((_, index) => 
+      positions[index] !== undefined ? positions[index] : avgPosition
+    );
+    setPositions(newPositions);
+    
+    // 피라미딩 진입시점 배열 크기 조정
+    const newPyramidingEntries = Array(count).fill('').map((_, index) => 
+      pyramidingEntries[index] || ''
+    );
+    setPyramidingEntries(newPyramidingEntries);
+  };
+
+  const handlePositionChange = (index, value) => {
+    const newPositions = [...positions];
+    newPositions[index] = value;
+    setPositions(newPositions);
+  };
+
+  const handlePyramidingEntryChange = (index, value) => {
+    const newPyramidingEntries = [...pyramidingEntries];
+    newPyramidingEntries[index] = value;
+    setPyramidingEntries(newPyramidingEntries);
+  };
+
+  // 포지션 합계 계산
+  const positionSum = positions.reduce((sum, pos) => sum + (parseFloat(pos) || 0), 0);
 
   // 실제 OHLCV 데이터로 차트 생성
   const chartData = createCandlestickData(ohlcvData, analysisData);
@@ -1556,12 +1617,31 @@ function Presentation() {
                 overflow: "hidden",
               }}
             >
-              {/* 헤더 부분 */}
-              {/* <MKBox sx={{ p: 1, flexShrink: 0, borderBottom: "1px solid #e0e0e0" }}>
-                <MKTypography variant="h5" textAlign="center">
-                  종목 목록 ({stockData.length}개)
-                </MKTypography>
-              </MKBox> */}
+              {/* 탭 헤더 */}
+              <MKBox sx={{ flexShrink: 0, borderBottom: "1px solid #e0e0e0" }}>
+                <Tabs
+                  value={activeTab}
+                  onChange={handleTabChange}
+                  sx={{
+                    minHeight: '48px',
+                    '& .MuiTabs-indicator': {
+                      backgroundColor: '#667eea',
+                      height: '3px',
+                    },
+                    '& .MuiTab-root': {
+                      fontWeight: 'bold',
+                      fontSize: '0.9rem',
+                      color: '#666',
+                      '&.Mui-selected': {
+                        color: '#667eea',
+                      },
+                    },
+                  }}
+                >
+                  <Tab label="투자목록" />
+                  <Tab label="자동매매" />
+                </Tabs>
+              </MKBox>
               
               {loading && (
                 <MKBox
@@ -1593,175 +1673,464 @@ function Presentation() {
 
               {!loading && !error && stockData.length > 0 && (
                 <>
-                  {/* 테이블 헤더 */}
-                  <MKBox
-                    sx={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      p: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Grid container spacing={0}>
-                      <Grid item xs={5}>
-                        <MKTypography variant="subtitle2" color="white" fontWeight="bold">
-                          종목명
-                        </MKTypography>
-                      </Grid>
-                      <Grid item xs={2.5}>
-                        <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
-                          RS순위
-                        </MKTypography>
-                      </Grid>
-                      <Grid item xs={2.5}>
-                        <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
-                          당기매출
-                        </MKTypography>
-                      </Grid>
-                      <Grid item xs={2}>
-                        <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
-                          영업이익
-                        </MKTypography>
-                      </Grid>
-                    </Grid>
-                  </MKBox>
-
-                  {/* 스크롤 가능한 테이블 바디 */}
-                  <MKBox
-                    sx={{
-                      flex: 1,
-                      overflow: 'auto',
-                      backgroundColor: 'white',
-                      '&::-webkit-scrollbar': {
-                        width: '8px',
-                      },
-                      '&::-webkit-scrollbar-track': {
-                        background: '#f1f1f1',
-                        borderRadius: '4px',
-                      },
-                      '&::-webkit-scrollbar-thumb': {
-                        background: '#c1c1c1',
-                        borderRadius: '4px',
-                        '&:hover': {
-                          background: '#a1a1a1',
-                        },
-                      },
-                    }}
-                  >
-                    {stockData.map((row, rowIndex) => (
+                  {/* 투자목록 탭 내용 */}
+                  {activeTab === 0 && (
+                    <>
+                      {/* 테이블 헤더 */}
                       <MKBox
-                        key={row.code || rowIndex}
-                        onClick={() => handleStockClick(row)}
                         sx={{
-                          p: 0.5,
-                          borderBottom: rowIndex === stockData.length - 1 ? 'none' : '1px solid #f0f0f0',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          backgroundColor: selectedStock?.code === row.code 
-                            ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)'
-                            : rowIndex % 2 === 0 ? '#fafafa' : 'white',
-                          '&:hover': {
-                            backgroundColor: 'rgba(102, 126, 234, 0.08)',
-                            transform: 'translateX(4px)',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                            borderLeft: '3px solid #667eea',
-                          },
-                          ...(selectedStock?.code === row.code && {
-                            borderLeft: '3px solid #667eea',
-                            boxShadow: '0 2px 12px rgba(102, 126, 234, 0.2)',
-                          }),
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          p: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                          flexShrink: 0,
                         }}
                       >
-                        <Grid container spacing={0} alignItems="center">
+                        <Grid container spacing={0}>
                           <Grid item xs={5}>
-                            <MKBox>
-                              <MKTypography 
-                                variant="body2" 
-                                fontWeight={selectedStock?.code === row.code ? "bold" : "medium"}
-                                color={selectedStock?.code === row.code ? "#667eea" : "text.primary"}
-                                sx={{
-                                  fontSize: '0.8rem',
-                                  lineHeight: 1.1,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {row.name || '-'}
-                              </MKTypography>
-                              <MKTypography 
-                                variant="caption" 
-                                color="text.secondary"
-                                sx={{ fontSize: '0.7rem' }}
-                              >
-                                {row.code || ''}
-                              </MKTypography>
-                            </MKBox>
+                            <MKTypography variant="subtitle2" color="white" fontWeight="bold">
+                              종목명
+                            </MKTypography>
                           </Grid>
                           <Grid item xs={2.5}>
-                            <MKBox display="flex" justifyContent="center">
-                              <Chip
-                                label={row.rsRank || '-'}
-                                size="small"
-                                sx={{
-                                  backgroundColor: row.rsRank >= 80 ? '#4caf50' : 
-                                                 row.rsRank >= 60 ? '#ff9800' : 
-                                                 row.rsRank >= 40 ? '#f44336' : '#9e9e9e',
-                                  color: 'white',
-                                  fontWeight: 'bold',
-                                  fontSize: '0.7rem',
-                                  minWidth: '35px',
-                                  height: '20px',
-                                }}
-                              />
-                            </MKBox>
+                            <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
+                              RS순위
+                            </MKTypography>
                           </Grid>
                           <Grid item xs={2.5}>
-                            <MKBox display="flex" justifyContent="center" alignItems="center" gap={0.3}>
-                              {row['당기매출'] > 0 && (
-                                <ArrowUpward sx={{ fontSize: '10px', color: '#f44336' }} />
-                              )}
-                              {row['당기매출'] < 0 && (
-                                <ArrowDownward sx={{ fontSize: '10px', color: '#2196f3' }} />
-                              )}
-                              <MKTypography 
-                                variant="body2" 
-                                textAlign="center"
-                                color={row['당기매출'] > 0 ? '#f44336' : 
-                                       row['당기매출'] < 0 ? '#2196f3' : 'text.secondary'}
-                                fontWeight="bold"
-                                sx={{ fontSize: '0.75rem' }}
-                              >
-                                {formatNumber(row['당기매출']) || '0'}
-                              </MKTypography>
-                            </MKBox>
+                            <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
+                              당기매출
+                            </MKTypography>
                           </Grid>
                           <Grid item xs={2}>
-                            <MKBox display="flex" justifyContent="center" alignItems="center" gap={0.5}>
-                              {row['당기영업이익'] > 0 && (
-                                <ArrowUpward sx={{ fontSize: '12px', color: '#f44336' }} />
-                              )}
-                              {row['당기영업이익'] < 0 && (
-                                <ArrowDownward sx={{ fontSize: '12px', color: '#2196f3' }} />
-                              )}
-                              <MKTypography 
-                                variant="body2" 
-                                textAlign="center"
-                                color={row['당기영업이익'] > 0 ? '#f44336' : 
-                                       row['당기영업이익'] < 0 ? '#2196f3' : 'text.secondary'}
-                                fontWeight="bold"
-                                sx={{ fontSize: '0.8rem' }}
-                              >
-                                {formatNumber(row['당기영업이익']) || '0'}
-                              </MKTypography>
-                            </MKBox>
+                            <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
+                              영업이익
+                            </MKTypography>
                           </Grid>
                         </Grid>
                       </MKBox>
-                    ))}
-                  </MKBox>
+
+                      {/* 스크롤 가능한 테이블 바디 */}
+                      <MKBox
+                        sx={{
+                          flex: 1,
+                          overflow: 'auto',
+                          backgroundColor: 'white',
+                          '&::-webkit-scrollbar': {
+                            width: '8px',
+                          },
+                          '&::-webkit-scrollbar-track': {
+                            background: '#f1f1f1',
+                            borderRadius: '4px',
+                          },
+                          '&::-webkit-scrollbar-thumb': {
+                            background: '#c1c1c1',
+                            borderRadius: '4px',
+                            '&:hover': {
+                              background: '#a1a1a1',
+                            },
+                          },
+                        }}
+                      >
+                        {stockData.map((row, rowIndex) => (
+                          <MKBox
+                            key={row.code || rowIndex}
+                            onClick={() => handleStockClick(row)}
+                            sx={{
+                              p: 0.5,
+                              borderBottom: rowIndex === stockData.length - 1 ? 'none' : '1px solid #f0f0f0',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              backgroundColor: selectedStock?.code === row.code 
+                                ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)'
+                                : rowIndex % 2 === 0 ? '#fafafa' : 'white',
+                              '&:hover': {
+                                backgroundColor: 'rgba(102, 126, 234, 0.08)',
+                                transform: 'translateX(4px)',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                borderLeft: '3px solid #667eea',
+                              },
+                              ...(selectedStock?.code === row.code && {
+                                borderLeft: '3px solid #667eea',
+                                boxShadow: '0 2px 12px rgba(102, 126, 234, 0.2)',
+                              }),
+                            }}
+                          >
+                            <Grid container spacing={0} alignItems="center">
+                              <Grid item xs={5}>
+                                <MKBox>
+                                  <MKTypography 
+                                    variant="body2" 
+                                    fontWeight={selectedStock?.code === row.code ? "bold" : "medium"}
+                                    color={selectedStock?.code === row.code ? "#667eea" : "text.primary"}
+                                    sx={{
+                                      fontSize: '0.8rem',
+                                      lineHeight: 1.1,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {row.name || '-'}
+                                  </MKTypography>
+                                  <MKTypography 
+                                    variant="caption" 
+                                    color="text.secondary"
+                                    sx={{ fontSize: '0.7rem' }}
+                                  >
+                                    {row.code || ''}
+                                  </MKTypography>
+                                </MKBox>
+                              </Grid>
+                              <Grid item xs={2.5}>
+                                <MKBox display="flex" justifyContent="center">
+                                  <Chip
+                                    label={row.rsRank || '-'}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: row.rsRank >= 80 ? '#4caf50' : 
+                                                     row.rsRank >= 60 ? '#ff9800' : 
+                                                     row.rsRank >= 40 ? '#f44336' : '#9e9e9e',
+                                      color: 'white',
+                                      fontWeight: 'bold',
+                                      fontSize: '0.7rem',
+                                      minWidth: '35px',
+                                      height: '20px',
+                                    }}
+                                  />
+                                </MKBox>
+                              </Grid>
+                              <Grid item xs={2.5}>
+                                <MKBox display="flex" justifyContent="center" alignItems="center" gap={0.3}>
+                                  {row['당기매출'] > 0 && (
+                                    <ArrowUpward sx={{ fontSize: '10px', color: '#f44336' }} />
+                                  )}
+                                  {row['당기매출'] < 0 && (
+                                    <ArrowDownward sx={{ fontSize: '10px', color: '#2196f3' }} />
+                                  )}
+                                  <MKTypography 
+                                    variant="body2" 
+                                    textAlign="center"
+                                    color={row['당기매출'] > 0 ? '#f44336' : 
+                                           row['당기매출'] < 0 ? '#2196f3' : 'text.secondary'}
+                                    fontWeight="bold"
+                                    sx={{ fontSize: '0.75rem' }}
+                                  >
+                                    {formatNumber(row['당기매출']) || '0'}
+                                  </MKTypography>
+                                </MKBox>
+                              </Grid>
+                              <Grid item xs={2}>
+                                <MKBox display="flex" justifyContent="center" alignItems="center" gap={0.5}>
+                                  {row['당기영업이익'] > 0 && (
+                                    <ArrowUpward sx={{ fontSize: '12px', color: '#f44336' }} />
+                                  )}
+                                  {row['당기영업이익'] < 0 && (
+                                    <ArrowDownward sx={{ fontSize: '12px', color: '#2196f3' }} />
+                                  )}
+                                  <MKTypography 
+                                    variant="body2" 
+                                    textAlign="center"
+                                    color={row['당기영업이익'] > 0 ? '#f44336' : 
+                                           row['당기영업이익'] < 0 ? '#2196f3' : 'text.secondary'}
+                                    fontWeight="bold"
+                                    sx={{ fontSize: '0.8rem' }}
+                                  >
+                                    {formatNumber(row['당기영업이익']) || '0'}
+                                  </MKTypography>
+                                </MKBox>
+                              </Grid>
+                            </Grid>
+                          </MKBox>
+                        ))}
+                      </MKBox>
+                    </>
+                  )}
+
+                  {/* 자동매매 탭 내용 */}
+                  {activeTab === 1 && (
+                    <MKBox
+                      sx={{
+                        flex: 1,
+                        overflow: 'auto',
+                        p: 2,
+                        '&::-webkit-scrollbar': {
+                          width: '6px',
+                        },
+                        '&::-webkit-scrollbar-track': {
+                          background: '#f1f1f1',
+                          borderRadius: '3px',
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                          background: '#c1c1c1',
+                          borderRadius: '3px',
+                          '&:hover': {
+                            background: '#a1a1a1',
+                          },
+                        },
+                      }}
+                    >
+                      {/* 헤더 */}
+                      <MKBox sx={{ mb: 3, textAlign: 'center' }}>
+                        <MKBox
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mx: 'auto',
+                            mb: 1,
+                          }}
+                        >
+                          <MKTypography variant="h5" color="white">
+                            🤖
+                          </MKTypography>
+                        </MKBox>
+                        <MKTypography variant="h6" color="text.primary" fontWeight="bold">
+                          자동매매 설정
+                        </MKTypography>
+                      </MKBox>
+
+                      {/* 매매 방식 선택 */}
+                      <MKBox sx={{ mb: 3 }}>
+                        <MKTypography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+                          매매 방식
+                        </MKTypography>
+                        <FormControl component="fieldset">
+                          <RadioGroup
+                            value={tradingMode}
+                            onChange={handleTradingModeChange}
+                            sx={{ 
+                              '& .MuiFormControlLabel-root': {
+                                margin: '0 16px 0 0',
+                              },
+                              '& .MuiRadio-root': {
+                                color: '#667eea',
+                                '&.Mui-checked': {
+                                  color: '#667eea',
+                                },
+                              },
+                            }}
+                            row
+                          >
+                            <FormControlLabel value="manual" control={<Radio size="small" />} label="Manual" />
+                            <FormControlLabel value="turtle" control={<Radio size="small" />} label="Turtle(ATR)" />
+                          </RadioGroup>
+                        </FormControl>
+                      </MKBox>
+
+                      {/* 설정 폼 */}
+                      <MKBox sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {/* 진입시점 */}
+                        <TextField
+                          label="진입시점 (원)"
+                          value={entryPoint}
+                          onChange={(e) => setEntryPoint(e.target.value)}
+                          size="small"
+                          type="number"
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#667eea',
+                              },
+                            },
+                            '& .MuiInputLabel-root.Mui-focused': {
+                              color: '#667eea',
+                            },
+                          }}
+                        />
+
+                        {/* 최대손실 */}
+                        <TextField
+                          label="최대손실 (%)"
+                          value={maxLoss}
+                          onChange={(e) => setMaxLoss(e.target.value)}
+                          size="small"
+                          type="number"
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#667eea',
+                              },
+                            },
+                            '& .MuiInputLabel-root.Mui-focused': {
+                              color: '#667eea',
+                            },
+                          }}
+                        />
+
+                        {/* 손절 */}
+                        <TextField
+                          label={`손절 (${tradingMode === 'manual' ? '%' : 'ATR'})`}
+                          value={stopLoss}
+                          onChange={(e) => setStopLoss(e.target.value)}
+                          size="small"
+                          type="number"
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#667eea',
+                              },
+                            },
+                            '& .MuiInputLabel-root.Mui-focused': {
+                              color: '#667eea',
+                            },
+                          }}
+                        />
+
+                        {/* 익절 */}
+                        <TextField
+                          label={`익절 (${tradingMode === 'manual' ? '%' : 'ATR'})`}
+                          value={takeProfit}
+                          onChange={(e) => setTakeProfit(e.target.value)}
+                          size="small"
+                          type="number"
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#667eea',
+                              },
+                            },
+                            '& .MuiInputLabel-root.Mui-focused': {
+                              color: '#667eea',
+                            },
+                          }}
+                        />
+
+                        {/* 피라미딩 횟수 */}
+                        <TextField
+                          label="피라미딩횟수 (회)"
+                          value={pyramidingCount}
+                          onChange={handlePyramidingCountChange}
+                          size="small"
+                          type="number"
+                          inputProps={{ min: 1, max: 5 }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#667eea',
+                              },
+                            },
+                            '& .MuiInputLabel-root.Mui-focused': {
+                              color: '#667eea',
+                            },
+                          }}
+                        />
+
+                        {/* 포지션 설정 */}
+                        <MKBox>
+                          <MKBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <MKTypography variant="subtitle2" fontWeight="bold">
+                              포지션 설정
+                            </MKTypography>
+                            <MKTypography 
+                              variant="caption" 
+                              color={Math.abs(positionSum - 100) < 0.01 ? 'success.main' : 'error.main'}
+                              fontWeight="bold"
+                            >
+                              합계: {positionSum.toFixed(1)}%
+                            </MKTypography>
+                          </MKBox>
+                          {positions.map((position, index) => (
+                            <MKBox key={index} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                              <TextField
+                                label={`${index + 1}차 진입시점`}
+                                value={pyramidingEntries[index] || ''}
+                                onChange={(e) => handlePyramidingEntryChange(index, e.target.value)}
+                                size="small"
+                                type="number"
+                                sx={{
+                                  flex: 1,
+                                  '& .MuiOutlinedInput-root': {
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: '#667eea',
+                                    },
+                                  },
+                                  '& .MuiInputLabel-root.Mui-focused': {
+                                    color: '#667eea',
+                                  },
+                                }}
+                                InputProps={{
+                                  endAdornment: <MKTypography variant="caption" sx={{ mr: 1 }}>
+                                    {tradingMode === 'manual' ? '%' : 'ATR'}
+                                  </MKTypography>
+                                }}
+                              />
+                              <TextField
+                                label="포지션"
+                                value={position}
+                                onChange={(e) => handlePositionChange(index, e.target.value)}
+                                size="small"
+                                type="number"
+                                inputProps={{ min: 0, max: 100, step: 0.1 }}
+                                sx={{
+                                  flex: 1,
+                                  '& .MuiOutlinedInput-root': {
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: '#667eea',
+                                    },
+                                  },
+                                  '& .MuiInputLabel-root.Mui-focused': {
+                                    color: '#667eea',
+                                  },
+                                }}
+                                InputProps={{
+                                  endAdornment: <MKTypography variant="caption" sx={{ mr: 1 }}>%</MKTypography>
+                                }}
+                              />
+                            </MKBox>
+                          ))}
+                          {Math.abs(positionSum - 100) >= 0.01 && (
+                            <MKBox sx={{ 
+                              p: 1, 
+                              bgcolor: 'error.light', 
+                              borderRadius: 1, 
+                              border: '1px solid',
+                              borderColor: 'error.main'
+                            }}>
+                              <MKTypography variant="caption" color="error.main" fontWeight="bold">
+                                ⚠️ 포지션의 합이 100%가 되어야 합니다. (현재: {positionSum.toFixed(1)}%)
+                              </MKTypography>
+                            </MKBox>
+                          )}
+                        </MKBox>
+
+                        {/* 실행 버튼 */}
+                        <MKBox sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                          <Button
+                            variant="contained"
+                            sx={{
+                              flex: 1,
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                              },
+                            }}
+                          >
+                            설정 저장
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            sx={{
+                              flex: 1,
+                              borderColor: '#667eea',
+                              color: '#667eea',
+                              '&:hover': {
+                                borderColor: '#5a6fd8',
+                                backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                              },
+                            }}
+                          >
+                            초기화
+                          </Button>
+                        </MKBox>
+                      </MKBox>
+                    </MKBox>
+                  )}
                 </>
               )}
 
