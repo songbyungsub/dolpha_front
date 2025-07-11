@@ -14,7 +14,6 @@ Coded by www.creative-tim.com
 */
 /* eslint-disable */
 // @mui material components
-import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -34,9 +33,10 @@ import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
 import ArrowUpward from "@mui/icons-material/ArrowUpward";
 import ArrowDownward from "@mui/icons-material/ArrowDownward";
-import SwapVert from "@mui/icons-material/SwapVert";
 import Close from "@mui/icons-material/Close";
 import Assessment from "@mui/icons-material/Assessment";
+import Timeline from "@mui/icons-material/Timeline";
+import Delete from "@mui/icons-material/Delete";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
@@ -47,6 +47,8 @@ import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
+import ToggleButton from "@mui/material/ToggleButton";
 
 // Material Kit 2 React components
 import MKBox from "components/MKBox";
@@ -67,7 +69,7 @@ import {
   LinearScale,
   TimeScale,
   Title,
-  Tooltip,
+  Tooltip as ChartTooltip,
   Legend,
   BarElement,
   LineElement,
@@ -87,7 +89,7 @@ ChartJS.register(
   LineElement,
   PointElement,
   Title,
-  Tooltip,
+  ChartTooltip,
   Legend
 );
 
@@ -96,8 +98,6 @@ function Presentation() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedStock, setSelectedStock] = useState(null);
-  const [sortField, setSortField] = useState("rsRank");
-  const [sortDirection, setSortDirection] = useState("asc");
   const [ohlcvData, setOhlcvData] = useState([]); // OHLCV 데이터 상태 추가
   const [chartLoading, setChartLoading] = useState(false); // 차트 로딩 상태
   const [indexData, setIndexData] = useState([]); // 인덱스 데이터 상태 추가
@@ -114,10 +114,39 @@ function Presentation() {
   const [maxLoss, setMaxLoss] = useState('');
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
-  const [pyramidingCount, setPyramidingCount] = useState(1);
+  const [pyramidingCount, setPyramidingCount] = useState(0);
   const [entryPoint, setEntryPoint] = useState(''); // 단일 진입시점
-  const [pyramidingEntries, setPyramidingEntries] = useState(['']); // 피라미딩 진입시점 배열
+  const [pyramidingEntries, setPyramidingEntries] = useState([]); // 피라미딩 진입시점 배열
   const [positions, setPositions] = useState([100]); // 포지션 배열 (합이 100%가 되어야 함)
+  const [horizontalLines, setHorizontalLines] = useState([]); // 수평선 배열
+  const [isDrawingMode, setIsDrawingMode] = useState(false); // 수평선 그리기 모드
+  const [isDragging, setIsDragging] = useState(false); // 드래그 상태
+  const [dragLineId, setDragLineId] = useState(null); // 드래그 중인 선 ID
+  const [selectedLineId, setSelectedLineId] = useState(null); // 선택된 선 ID
+  const [showEntryPopup, setShowEntryPopup] = useState(false); // 진입시점 설정 팝업 상태
+  
+  // 드래그 상태를 즉시 접근 가능하도록 useRef 사용
+  const dragStateRef = useRef({
+    isDragging: false,
+    dragLineId: null
+  });
+  
+  // 차트 참조를 위한 ref
+  const chartRef = useRef(null);
+  
+  // 라벨 위치 강제 업데이트를 위한 상태
+  const [labelUpdateTrigger, setLabelUpdateTrigger] = useState(0);
+  
+  // 차트 데이터 변경 시 라벨 위치 업데이트
+  useEffect(() => {
+    if (chartRef.current && ohlcvData.length > 0) {
+      // 차트가 완전히 렌더링된 후 라벨 위치 업데이트
+      const timer = setTimeout(() => {
+        setLabelUpdateTrigger(prev => prev + 1);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [ohlcvData, analysisData]);
   
   // 실제 OHLCV 데이터 가져오기
   const fetchOHLCVData = async (stockCode) => {
@@ -248,6 +277,7 @@ function Presentation() {
   const createCandlestickData = (ohlcvData, analysisData) => {
     if (!ohlcvData || ohlcvData.length === 0) return null;
 
+
     const datasets = [
       {
         label: '캔들스틱',
@@ -276,9 +306,37 @@ function Presentation() {
       }
     ];
 
+    // 수평선 추가
+    horizontalLines.forEach((line, index) => {
+      const timeRange = ohlcvData.length > 0 ? [
+        new Date(ohlcvData[0].date).getTime(),
+        new Date(ohlcvData[ohlcvData.length - 1].date).getTime()
+      ] : [Date.now() - 86400000, Date.now()];
+
+
+      datasets.push({
+        label: `진입선 ${index + 1}`,
+        type: 'line',
+        data: [
+          { x: timeRange[0], y: line.value },
+          { x: timeRange[1], y: line.value }
+        ],
+        borderColor: line.color,
+        backgroundColor: 'transparent',
+        borderWidth: selectedLineId === line.id ? 3 : 2,
+        pointRadius: 0,
+        pointHoverRadius: 8,
+        tension: 0,
+        borderDash: [5, 5],
+        order: 10 + index,
+        hoverBorderWidth: 4,
+        hoverBorderColor: '#ff9800',
+        lineId: line.id // 커스텀 속성으로 ID 저장
+      });
+    });
+
     // 이동평균선 데이터 추가
     if (analysisData && analysisData.length > 0) {
-      console.log('Analysis data:', analysisData.slice(0, 3)); // 디버깅용 로그
       // 50일선
       datasets.push({
         label: '50일선',
@@ -534,10 +592,6 @@ function Presentation() {
     loadData();
   }, [selectedStock]);
 
-  // 테이블 헤더 정의 (name, rsRank, 당기매출, 당기영업이익 사용)
-  const tableHeaders = ['name', 'rsRank', '당기매출', '당기영업이익'];
-  const tableHeaderLabels = ['종목명', 'RS순위', '당기매출', '당기영업이익'];
-
   // 숫자를 억/조 단위로 포맷팅하는 함수
   const formatNumber = (value) => {
     if (!value || value === 0) return '0';
@@ -558,14 +612,6 @@ function Presentation() {
     }
   };
 
-  // 셀 값을 포맷팅하는 함수
-  const formatCellValue = (value, header) => {
-    if (header === '당기매출' || header === '당기영업이익') {
-      return formatNumber(value); 
-    }
-    return value;
-  };
-
   const handleStockClick = (stock) => {
     setSelectedStock(stock);
   };
@@ -582,27 +628,6 @@ function Presentation() {
     setOpenFinancialModal(false);
   };
 
-  // 재무제표 데이터를 년도/분기별로 그룹화하고 정리하는 함수
-  const processFinancialData = (rawData) => {
-    if (!rawData || rawData.length === 0) return {};
-
-    // 년도와 분기별로 그룹화
-    const grouped = {};
-    
-    rawData.forEach(item => {
-      const key = `${item.year}${item.quarter}`;
-      if (!grouped[key]) {
-        grouped[key] = {
-          year: item.year,
-          quarter: item.quarter,
-          data: {}
-        };
-      }
-      grouped[key].data[item.account_name] = item.amount;
-    });
-
-    return grouped;
-  };
 
   // 금액을 억/조 단위로 포맷팅하는 함수 (재무제표용)
   const formatFinancialAmount = (amount) => {
@@ -633,8 +658,28 @@ function Presentation() {
   };
 
   // 탭 변경 핸들러
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (_, newValue) => {
     setActiveTab(newValue);
+  };
+
+  // KRX 호가단위 계산 함수
+  const getKRXTickSize = (price) => {
+    const numPrice = parseFloat(price) || 0;
+    
+    if (numPrice < 1000) return 1;
+    if (numPrice < 5000) return 5;
+    if (numPrice < 10000) return 10;
+    if (numPrice < 50000) return 50;
+    if (numPrice < 100000) return 100;
+    if (numPrice < 500000) return 500;
+    return 1000;
+  };
+
+  // 가격을 KRX 호가단위로 조정하는 함수
+  const adjustToKRXTickSize = (price) => {
+    const numPrice = parseFloat(price) || 0;
+    const tickSize = getKRXTickSize(numPrice);
+    return Math.round(numPrice / tickSize) * tickSize;
   };
 
   // 자동매매 관련 핸들러
@@ -643,28 +688,30 @@ function Presentation() {
   };
 
   const handlePyramidingCountChange = (event) => {
-    const count = parseInt(event.target.value) || 1;
+    const count = parseInt(event.target.value) || 0;
     setPyramidingCount(count);
     
-    // 포지션 배열 크기 조정
-    const currentSum = positions.reduce((sum, pos) => sum + (parseFloat(pos) || 0), 0);
-    const avgPosition = currentSum / count;
-    const newPositions = Array(count).fill(0).map((_, index) => 
-      positions[index] !== undefined ? positions[index] : avgPosition
-    );
+    // 피라미딩 횟수에 따른 포지션 계산
+    const totalEntries = count + 1; // 1차 + 피라미딩 횟수
+    const equalPosition = 100 / totalEntries;
+    
+    // 포지션 배열 설정 (1차는 소수점 유지, 2차 이상은 반올림)
+    const newPositions = Array(totalEntries).fill(0).map((_, index) => {
+      if (index === 0) {
+        // 1차 진입시점은 소수점 2자리까지 유지
+        return parseFloat(equalPosition.toFixed(2));
+      } else {
+        // 2차 이상은 반올림
+        return Math.round(equalPosition);
+      }
+    });
     setPositions(newPositions);
     
-    // 피라미딩 진입시점 배열 크기 조정
+    // 피라미딩 진입시점 배열 크기 조정 (2차부터 시작하므로 count개)
     const newPyramidingEntries = Array(count).fill('').map((_, index) => 
       pyramidingEntries[index] || ''
     );
     setPyramidingEntries(newPyramidingEntries);
-  };
-
-  const handlePositionChange = (index, value) => {
-    const newPositions = [...positions];
-    newPositions[index] = value;
-    setPositions(newPositions);
   };
 
   const handlePyramidingEntryChange = (index, value) => {
@@ -675,6 +722,241 @@ function Presentation() {
 
   // 포지션 합계 계산
   const positionSum = positions.reduce((sum, pos) => sum + (parseFloat(pos) || 0), 0);
+
+  // 수평선 관련 핸들러
+  const handleAddHorizontalLine = (yValue) => {
+    const newLine = {
+      id: Date.now(),
+      value: yValue,
+      color: '#ff6b35',
+      isDragging: false,
+      type: 'entry'
+    };
+    setHorizontalLines(prev => [...prev, newLine]);
+    
+    // 자동매매 탭의 진입시점에 값 설정
+    if (activeTab === 0) {
+      setEntryPoint(yValue.toString());
+    }
+  };
+
+  const handleUpdateHorizontalLine = (id, newValue, updateTradingSettings = true) => {
+    setHorizontalLines(prev => 
+      prev.map(line => 
+        line.id === id ? { ...line, value: newValue } : line
+      )
+    );
+    
+    if (updateTradingSettings) {
+      const line = horizontalLines.find(line => line.id === id);
+      if (line) {
+        if (line.type === 'entry') {
+          setEntryPoint(newValue.toString());
+        } else if (line.type === 'pyramiding') {
+          const lineIndex = horizontalLines.findIndex(l => l.id === id && l.type === 'pyramiding');
+          if (lineIndex >= 0) {
+            // 1차 진입시점 대비 비율 계산
+            const baseEntryPrice = parseFloat(entryPoint);
+            if (baseEntryPrice && baseEntryPrice > 0) {
+              const percentage = ((newValue - baseEntryPrice) / baseEntryPrice * 100).toFixed(2);
+              const percentageStr = percentage > 0 ? `+${percentage}` : percentage.toString();
+              handlePyramidingEntryChange(lineIndex, percentageStr);
+            } else {
+              handlePyramidingEntryChange(lineIndex, newValue.toString());
+            }
+          }
+        }
+      }
+    }
+  };
+
+  const handleDeleteHorizontalLine = (id) => {
+    setHorizontalLines(prev => prev.filter(line => line.id !== id));
+  };
+
+  const toggleDrawingMode = () => {
+    setIsDrawingMode(!isDrawingMode);
+  };
+
+  // 라벨 클릭 핸들러 (드래그와 구분)
+  const handleLabelClick = (lineId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // 선택된 라인이 같으면 팝업 토글, 다르면 새로 선택
+    if (selectedLineId === lineId) {
+      setShowEntryPopup(!showEntryPopup);
+    } else {
+      setSelectedLineId(lineId);
+      setShowEntryPopup(true);
+    }
+  };
+
+  // 라벨 드래그 핸들러
+  const handleLabelMouseDown = (lineId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // 드래그 시작 위치 저장
+    const startX = event.clientX;
+    const startY = event.clientY;
+    
+    const handleMouseMove = (moveEvent) => {
+      const deltaX = Math.abs(moveEvent.clientX - startX);
+      const deltaY = Math.abs(moveEvent.clientY - startY);
+      
+      // 5픽셀 이상 움직이면 드래그 시작
+      if (deltaX > 5 || deltaY > 5) {
+        // state와 ref 모두 업데이트
+        setIsDragging(true);
+        setDragLineId(lineId);
+        setSelectedLineId(lineId);
+        
+        // ref에도 즉시 값 저장
+        dragStateRef.current = {
+          isDragging: true,
+          dragLineId: lineId
+        };
+        
+        // 임시 리스너 제거
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        
+        // 전역 드래그 이벤트 리스너 추가
+        document.addEventListener('mousemove', handleGlobalMouseMove);
+        document.addEventListener('mouseup', handleGlobalMouseUp);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      // 드래그가 시작되지 않았으면 클릭으로 처리
+      if (!dragStateRef.current.isDragging) {
+        handleLabelClick(lineId, event);
+      }
+      
+      // 임시 리스너 제거
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    // 임시 이벤트 리스너 추가 (드래그 감지용)
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleGlobalMouseMove = (event) => {
+    // ref 값을 사용하여 즉시 접근
+    const { isDragging: refIsDragging, dragLineId: refDragLineId } = dragStateRef.current;
+    
+    if (refIsDragging && refDragLineId && chartData && ohlcvData.length > 0) {
+      try {
+        // 차트 영역 찾기
+        const chartCanvas = document.querySelector('canvas');
+        
+        if (chartCanvas) {
+          const rect = chartCanvas.getBoundingClientRect();
+          const y = event.clientY - rect.top;
+          
+          // Y축 범위 계산
+          const yScale = chartData.datasets[0]?.data || [];
+          const minPrice = Math.min(...yScale.map(d => Math.min(d.l || d.y || 0)));
+          const maxPrice = Math.max(...yScale.map(d => Math.max(d.h || d.y || 0)));
+          const priceRange = maxPrice - minPrice;
+          const chartHeight = 350;
+          
+          // 마우스 Y 위치를 가격으로 변환
+          const normalizedY = Math.max(0, Math.min(1, (y - 30) / (chartHeight - 60)));
+          const dataY = maxPrice - (normalizedY * priceRange);
+          
+          if (dataY && !isNaN(dataY)) {
+            handleUpdateHorizontalLine(refDragLineId, Math.round(dataY), false);
+          }
+        }
+      } catch (error) {
+        // 오류 발생 시 조용히 처리
+      }
+    }
+  };
+
+  const handleGlobalMouseUp = () => {
+    // 드래그 완료 시 자동매매 설정 업데이트
+    const { dragLineId: refDragLineId } = dragStateRef.current;
+    if (refDragLineId) {
+      const line = horizontalLines.find(line => line.id === refDragLineId);
+      if (line) {
+        if (line.type === 'entry') {
+          setEntryPoint(line.value.toString());
+        } else if (line.type === 'pyramiding') {
+          const lineIndex = horizontalLines.findIndex(l => l.id === refDragLineId && l.type === 'pyramiding');
+          if (lineIndex >= 0) {
+            // 1차 진입시점 대비 비율 계산
+            const baseEntryPrice = parseFloat(entryPoint);
+            if (baseEntryPrice && baseEntryPrice > 0) {
+              const percentage = ((line.value - baseEntryPrice) / baseEntryPrice * 100).toFixed(2);
+              const percentageStr = percentage > 0 ? `+${percentage}` : percentage.toString();
+              handlePyramidingEntryChange(lineIndex, percentageStr);
+            } else {
+              handlePyramidingEntryChange(lineIndex, line.value.toString());
+            }
+          }
+        }
+      }
+    }
+    
+    setIsDragging(false);
+    setDragLineId(null);
+    
+    // ref도 초기화
+    dragStateRef.current = {
+      isDragging: false,
+      dragLineId: null
+    };
+    
+    // 전역 이벤트 리스너 제거
+    document.removeEventListener('mousemove', handleGlobalMouseMove);
+    document.removeEventListener('mouseup', handleGlobalMouseUp);
+  };
+
+  // 수평선에서 자동매매 설정으로 연결
+  const connectLineToEntry = (lineId) => {
+    const line = horizontalLines.find(l => l.id === lineId);
+    if (line) {
+      const adjustedPrice = adjustToKRXTickSize(line.value);
+      setEntryPoint(adjustedPrice.toString());
+      setHorizontalLines(prev => 
+        prev.map(l => 
+          l.id === lineId ? { ...l, type: 'entry', color: '#667eea' } : l
+        )
+      );
+    }
+  };
+
+  const connectLineToPyramiding = (lineId, pyramidingIndex) => {
+    const line = horizontalLines.find(l => l.id === lineId);
+    if (!line) return;
+    
+    // 1차 진입시점이 설정되어 있는지 확인
+    const baseEntryPrice = parseFloat(entryPoint);
+    if (!baseEntryPrice || baseEntryPrice <= 0) {
+      alert('1차 진입시점을 먼저 설정해주세요.');
+      return;
+    }
+    
+    // 수평선 가격을 KRX 호가단위로 조정
+    const adjustedLinePrice = adjustToKRXTickSize(line.value);
+    
+    // 1차 진입시점 대비 비율 계산 (정수로 반올림)
+    const percentage = Math.round((adjustedLinePrice - baseEntryPrice) / baseEntryPrice * 100);
+    const percentageStr = percentage > 0 ? `+${percentage}` : percentage.toString();
+    
+    handlePyramidingEntryChange(pyramidingIndex, percentageStr);
+    
+    setHorizontalLines(prev => 
+      prev.map(l => 
+        l.id === lineId ? { ...l, type: 'pyramiding', color: '#ff9800' } : l
+      )
+    );
+  };
 
   // 실제 OHLCV 데이터로 차트 생성
   const chartData = createCandlestickData(ohlcvData, analysisData);
@@ -694,6 +976,70 @@ function Presentation() {
         bottom: 5,
         left: 10,
         right: 10
+      }
+    },
+    onClick: (event, elements, chart) => {
+      // 수평선 클릭 확인
+      if (elements.length > 0 && !isDrawingMode) {
+        const element = elements[0];
+        const dataset = chart.data.datasets[element.datasetIndex];
+        if (dataset.label && dataset.label.includes('진입선')) {
+          const lineId = dataset.lineId;
+          setSelectedLineId(lineId);
+          return;
+        }
+      }
+      
+      if (isDrawingMode && ohlcvData.length > 0) {
+        try {
+          // 더 안전한 방법으로 Y 좌표 계산
+          let dataY;
+          
+          if (event.native && chart.canvas && chart.scales.y) {
+            const rect = chart.canvas.getBoundingClientRect();
+            const y = event.native.clientY - rect.top;
+            dataY = chart.scales.y.getValueForPixel(y);
+          } else {
+            // 대체 방법: 가격 범위 중간값 사용
+            const yScale = chart.scales.y;
+            const minValue = yScale.min;
+            const maxValue = yScale.max;
+            dataY = (minValue + maxValue) / 2;
+          }
+          
+          if (dataY && !isNaN(dataY)) {
+            const adjustedPrice = adjustToKRXTickSize(dataY);
+            handleAddHorizontalLine(adjustedPrice);
+            setIsDrawingMode(false);
+          }
+        } catch (error) {
+          // 대체 방법: 마지막 가격 사용
+          if (ohlcvData.length > 0) {
+            const lastPrice = ohlcvData[ohlcvData.length - 1].close;
+            const adjustedPrice = adjustToKRXTickSize(lastPrice);
+            handleAddHorizontalLine(adjustedPrice);
+            setIsDrawingMode(false);
+          }
+        }
+      }
+    },
+    onHover: (event, elements, chart) => {
+      try {
+        if (isDrawingMode) {
+          event.native.target.style.cursor = 'crosshair';
+        } else if (elements.length > 0) {
+          const element = elements[0];
+          const datasetLabel = chart.data.datasets[element.datasetIndex]?.label;
+          if (datasetLabel && datasetLabel.includes('진입선')) {
+            event.native.target.style.cursor = 'pointer';
+          } else {
+            event.native.target.style.cursor = 'default';
+          }
+        } else {
+          event.native.target.style.cursor = 'default';
+        }
+      } catch (error) {
+        // 오류 발생 시 조용히 처리
       }
     },
     scales: {
@@ -1416,9 +1762,280 @@ function Presentation() {
                           border: "1px solid #e0e0e0",
                           borderRadius: 1,
                           p: 0.5,
-                          mb: 1
+                          mb: 1,
+                          position: 'relative'
                         }}>
-                          <Chart type="candlestick" data={chartData} options={chartOptions} />
+                          {/* 차트 컨트롤 버튼들 */}
+                          <MKBox sx={{ 
+                            position: 'absolute', 
+                            top: 8, 
+                            right: 8, 
+                            zIndex: 1000,
+                            display: 'flex',
+                            gap: 1
+                          }}>
+                            <Tooltip title="수평선 그리기">
+                              <ToggleButton
+                                value="drawing"
+                                selected={isDrawingMode}
+                                onChange={toggleDrawingMode}
+                                size="small"
+                                sx={{
+                                  border: '1px solid #667eea',
+                                  color: isDrawingMode ? 'white' : '#667eea',
+                                  backgroundColor: isDrawingMode ? '#667eea' : 'transparent',
+                                  '&:hover': {
+                                    backgroundColor: isDrawingMode ? '#5a6fd8' : 'rgba(102, 126, 234, 0.1)',
+                                  },
+                                  '&.Mui-selected': {
+                                    backgroundColor: '#667eea',
+                                    color: 'white',
+                                    '&:hover': {
+                                      backgroundColor: '#5a6fd8',
+                                    },
+                                  },
+                                }}
+                              >
+                                <Timeline sx={{ fontSize: '16px' }} />
+                              </ToggleButton>
+                            </Tooltip>
+                            
+                            {horizontalLines.length > 0 && (
+                              <Tooltip title="모든 수평선 삭제">
+                                <IconButton
+                                  onClick={() => setHorizontalLines([])}
+                                  size="small"
+                                  sx={{
+                                    border: '1px solid #f44336',
+                                    color: '#f44336',
+                                    backgroundColor: 'transparent',
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                                    },
+                                  }}
+                                >
+                                  <Delete sx={{ fontSize: '16px' }} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </MKBox>
+
+                          {/* 수평선 가격 라벨들 - 차트 내부에 표시 */}
+                          {horizontalLines.map((line) => {
+                            // 차트 인스턴스에서 실제 스케일 정보 가져오기
+                            let linePosition = 175; // 기본값 (차트 중앙)
+                            
+                            // labelUpdateTrigger를 의존성으로 하여 강제 재계산
+                            if (chartRef.current && labelUpdateTrigger >= 0) {
+                              const chartInstance = chartRef.current;
+                              if (chartInstance.scales && chartInstance.scales.y) {
+                                const yScale = chartInstance.scales.y;
+                                try {
+                                  const pixelPosition = yScale.getPixelForValue(line.value);
+                                  // 라벨 중심이 수평선과 일치하도록 조정
+                                  linePosition = pixelPosition - 12;
+                                } catch (error) {
+                                  // 대체 계산으로 fallback
+                                  const yScale = chartData ? chartData.datasets[0]?.data : [];
+                                  if (yScale.length > 0) {
+                                    const minPrice = Math.min(...yScale.map(d => Math.min(d.l || d.y || 0)));
+                                    const maxPrice = Math.max(...yScale.map(d => Math.max(d.h || d.y || 0)));
+                                    const priceRange = maxPrice - minPrice;
+                                    const chartHeight = 350;
+                                    linePosition = ((maxPrice - line.value) / priceRange) * (chartHeight - 60) + 30 - 12;
+                                  }
+                                }
+                              }
+                            } else {
+                              // 대체 계산 (차트가 아직 준비되지 않은 경우)
+                              const yScale = chartData ? chartData.datasets[0]?.data : [];
+                              if (yScale.length > 0) {
+                                const minPrice = Math.min(...yScale.map(d => Math.min(d.l || d.y || 0)));
+                                const maxPrice = Math.max(...yScale.map(d => Math.max(d.h || d.y || 0)));
+                                const priceRange = maxPrice - minPrice;
+                                const chartHeight = 350;
+                                linePosition = ((maxPrice - line.value) / priceRange) * (chartHeight - 60) + 30 - 12;
+                              }
+                            }
+                            
+                            return (
+                              <MKBox 
+                                key={line.id}
+                                sx={{ 
+                                  position: 'absolute', 
+                                  left: 8, 
+                                  top: `${linePosition}px`,
+                                  zIndex: 1001,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 0.5,
+                                  backgroundColor: isDragging && dragLineId === line.id 
+                                    ? 'rgba(255, 152, 0, 0.9)' 
+                                    : selectedLineId === line.id 
+                                      ? 'rgba(102, 126, 234, 0.9)' 
+                                      : 'rgba(255, 255, 255, 0.9)',
+                                  borderRadius: 1,
+                                  p: 0.5,
+                                  border: isDragging && dragLineId === line.id
+                                    ? '2px solid #ff9800'
+                                    : selectedLineId === line.id 
+                                      ? '2px solid #667eea' 
+                                      : '1px solid #ddd',
+                                  boxShadow: isDragging && dragLineId === line.id
+                                    ? '0 4px 12px rgba(255, 152, 0, 0.3)'
+                                    : '0 2px 4px rgba(0,0,0,0.1)',
+                                  cursor: isDragging && dragLineId === line.id ? 'grabbing' : 'grab',
+                                  transition: isDragging && dragLineId === line.id ? 'none' : 'all 0.2s ease',
+                                  transform: isDragging && dragLineId === line.id ? 'scale(1.1)' : 'scale(1)',
+                                  '&:hover': {
+                                    backgroundColor: isDragging && dragLineId === line.id 
+                                      ? 'rgba(255, 152, 0, 0.9)'
+                                      : 'rgba(102, 126, 234, 0.1)',
+                                    transform: isDragging && dragLineId === line.id ? 'scale(1.1)' : 'scale(1.05)',
+                                  }
+                                }}
+                                onMouseDown={(e) => handleLabelMouseDown(line.id, e)}
+                              >
+                                <MKBox sx={{ 
+                                  width: 8, 
+                                  height: 2, 
+                                  backgroundColor: line.color,
+                                  borderRadius: 1
+                                }} />
+                                <MKTypography 
+                                  variant="caption" 
+                                  sx={{ 
+                                    fontSize: '0.75rem',
+                                    fontWeight: 'bold',
+                                    color: isDragging && dragLineId === line.id 
+                                      ? 'white'
+                                      : selectedLineId === line.id 
+                                        ? 'white' 
+                                        : 'text.primary',
+                                    minWidth: '60px',
+                                    userSelect: 'none' // 텍스트 선택 방지
+                                  }}
+                                >
+                                  {new Intl.NumberFormat('ko-KR').format(line.value)}
+                                </MKTypography>
+                                <IconButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteHorizontalLine(line.id);
+                                  }}
+                                  size="small"
+                                  sx={{ 
+                                    p: 0.2, 
+                                    color: isDragging && dragLineId === line.id 
+                                      ? 'white'
+                                      : selectedLineId === line.id 
+                                        ? 'white' 
+                                        : '#f44336',
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(244, 67, 54, 0.2)',
+                                    },
+                                  }}
+                                >
+                                  <Delete sx={{ fontSize: '12px' }} />
+                                </IconButton>
+                              </MKBox>
+                            );
+                          })}
+                          
+                          {/* 선택된 라인에 대한 연결 옵션 - 클릭 시 팝업 */}
+                          {selectedLineId && showEntryPopup && (
+                            <MKBox sx={{ 
+                              position: 'absolute', 
+                              top: 40, 
+                              right: 8, 
+                              zIndex: 1002,
+                              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                              borderRadius: 1,
+                              p: 1,
+                              border: '2px solid #667eea',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                              animation: 'fadeIn 0.2s ease-in-out'
+                            }}>
+                              <MKBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <MKTypography variant="caption" fontWeight="bold">
+                                  진입시점 설정 ({horizontalLines.find(l => l.id === selectedLineId)?.value}원)
+                                </MKTypography>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => setShowEntryPopup(false)}
+                                  sx={{ padding: '2px' }}
+                                >
+                                  <Close sx={{ fontSize: '14px' }} />
+                                </IconButton>
+                              </MKBox>
+                              <MKBox sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => {
+                                    connectLineToEntry(selectedLineId);
+                                    setShowEntryPopup(false);
+                                  }}
+                                  sx={{ 
+                                    fontSize: '0.7rem',
+                                    borderColor: '#667eea',
+                                    color: '#667eea',
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                    }
+                                  }}
+                                >
+                                  진입시점으로 설정
+                                </Button>
+                                {pyramidingEntries.map((_, index) => (
+                                  <Button
+                                    key={index}
+                                    size="small"
+                                    variant="outlined"
+                                    disabled={!entryPoint || parseFloat(entryPoint) <= 0}
+                                    onClick={() => {
+                                      connectLineToPyramiding(selectedLineId, index);
+                                      setShowEntryPopup(false);
+                                    }}
+                                    sx={{ 
+                                      fontSize: '0.7rem',
+                                      borderColor: '#ff9800',
+                                      color: '#ff9800',
+                                      '&:hover': {
+                                        backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                                      }
+                                    }}
+                                  >
+                                    {index + 2}차 진입으로 설정
+                                  </Button>
+                                ))}
+                              </MKBox>
+                            </MKBox>
+                          )}
+
+                          {isDrawingMode && (
+                            <MKBox sx={{ 
+                              position: 'absolute', 
+                              bottom: 8, 
+                              left: 8, 
+                              zIndex: 1000,
+                              backgroundColor: 'rgba(255, 107, 53, 0.9)',
+                              color: 'white',
+                              borderRadius: 1,
+                              p: 1
+                            }}>
+                              <MKTypography variant="caption" fontWeight="bold">
+                                📍 차트를 클릭하여 수평선을 그으세요
+                              </MKTypography>
+                            </MKBox>
+                          )}
+
+                          <Chart 
+                            ref={chartRef}
+                            type="candlestick" 
+                            data={chartData} 
+                            options={chartOptions}
+                          />
                         </MKBox>
                         
                         {/* 거래량 차트 */}
@@ -1926,23 +2543,43 @@ function Presentation() {
                       {/* 설정 폼 */}
                       <MKBox sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {/* 진입시점 */}
-                        <TextField
-                          label="진입시점 (원)"
-                          value={entryPoint}
-                          onChange={(e) => setEntryPoint(e.target.value)}
-                          size="small"
-                          type="number"
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#667eea',
+                        <MKBox sx={{ position: 'relative' }}>
+                          <TextField
+                            label="진입시점 (원)"
+                            value={entryPoint}
+                            onChange={(e) => {
+                              const adjustedValue = adjustToKRXTickSize(e.target.value);
+                              setEntryPoint(adjustedValue.toString());
+                            }}
+                            size="small"
+                            type="number"
+                            inputProps={{ step: getKRXTickSize(entryPoint) }}
+                            sx={{
+                              width: '100%',
+                              '& .MuiOutlinedInput-root': {
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#667eea',
+                                },
                               },
-                            },
-                            '& .MuiInputLabel-root.Mui-focused': {
-                              color: '#667eea',
-                            },
-                          }}
-                        />
+                              '& .MuiInputLabel-root.Mui-focused': {
+                                color: '#667eea',
+                              },
+                            }}
+                          />
+                          {horizontalLines.length > 0 && (
+                            <MKBox sx={{ 
+                              mt: 0.5,
+                              p: 0.5,
+                              backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                              borderRadius: 1,
+                              border: '1px solid rgba(102, 126, 234, 0.3)'
+                            }}>
+                              <MKTypography variant="caption" color="#667eea" fontWeight="bold">
+                                📈 차트에서 설정된 진입선: {horizontalLines.length}개
+                              </MKTypography>
+                            </MKBox>
+                          )}
+                        </MKBox>
 
                         {/* 최대손실 */}
                         <TextField
@@ -2008,7 +2645,7 @@ function Presentation() {
                           onChange={handlePyramidingCountChange}
                           size="small"
                           type="number"
-                          inputProps={{ min: 1, max: 5 }}
+                          inputProps={{ min: 0, max: 6 }}
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               '&.Mui-focused fieldset': {
@@ -2035,14 +2672,65 @@ function Presentation() {
                               합계: {positionSum.toFixed(1)}%
                             </MKTypography>
                           </MKBox>
-                          {positions.map((position, index) => (
+                          {/* 1차 진입시점 (항상 표시) */}
+                          <MKBox sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                            <TextField
+                              label="1차 진입시점"
+                              value={entryPoint}
+                              onChange={(e) => {
+                                const adjustedValue = adjustToKRXTickSize(e.target.value);
+                                setEntryPoint(adjustedValue.toString());
+                              }}
+                              size="small"
+                              type="number"
+                              disabled={pyramidingCount > 0}
+                              sx={{
+                                flex: 1,
+                                '& .MuiOutlinedInput-root': {
+                                  '&.Mui-focused fieldset': {
+                                    borderColor: '#667eea',
+                                  },
+                                },
+                                '& .MuiInputLabel-root.Mui-focused': {
+                                  color: '#667eea',
+                                },
+                              }}
+                              InputProps={{
+                                endAdornment: <MKTypography variant="caption" sx={{ mr: 1 }}>원</MKTypography>
+                              }}
+                            />
+                            <TextField
+                              label="포지션"
+                              value={positions[0] || 100}
+                              disabled
+                              size="small"
+                              type="number"
+                              sx={{
+                                width: '100px',
+                                '& .MuiOutlinedInput-root': {
+                                  '&.Mui-focused fieldset': {
+                                    borderColor: '#667eea',
+                                  },
+                                },
+                                '& .MuiInputLabel-root.Mui-focused': {
+                                  color: '#667eea',
+                                },
+                              }}
+                              InputProps={{
+                                endAdornment: <MKTypography variant="caption" sx={{ mr: 1 }}>%</MKTypography>
+                              }}
+                            />
+                          </MKBox>
+
+                          {/* 2차 이상 진입시점들 (피라미딩 횟수만큼 표시) */}
+                          {pyramidingEntries.map((entry, index) => (
                             <MKBox key={index} sx={{ display: 'flex', gap: 1, mb: 1 }}>
                               <TextField
-                                label={`${index + 1}차 진입시점`}
-                                value={pyramidingEntries[index] || ''}
+                                label={`${index + 2}차 진입시점`}
+                                value={entry}
                                 onChange={(e) => handlePyramidingEntryChange(index, e.target.value)}
                                 size="small"
-                                type="number"
+                                type="text"
                                 sx={{
                                   flex: 1,
                                   '& .MuiOutlinedInput-root': {
@@ -2055,20 +2743,17 @@ function Presentation() {
                                   },
                                 }}
                                 InputProps={{
-                                  endAdornment: <MKTypography variant="caption" sx={{ mr: 1 }}>
-                                    {tradingMode === 'manual' ? '%' : 'ATR'}
-                                  </MKTypography>
+                                  endAdornment: <MKTypography variant="caption" sx={{ mr: 1 }}>%</MKTypography>
                                 }}
                               />
                               <TextField
                                 label="포지션"
-                                value={position}
-                                onChange={(e) => handlePositionChange(index, e.target.value)}
+                                value={positions[index + 1] || 0}
+                                disabled
                                 size="small"
                                 type="number"
-                                inputProps={{ min: 0, max: 100, step: 0.1 }}
                                 sx={{
-                                  flex: 1,
+                                  width: '100px',
                                   '& .MuiOutlinedInput-root': {
                                     '&.Mui-focused fieldset': {
                                       borderColor: '#667eea',
