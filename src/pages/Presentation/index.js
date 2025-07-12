@@ -93,6 +93,7 @@ ChartJS.register(
   Legend
 );
 
+
 function Presentation() {
   const [stockData, setStockData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -136,6 +137,35 @@ function Presentation() {
   
   // 라벨 위치 강제 업데이트를 위한 상태
   const [labelUpdateTrigger, setLabelUpdateTrigger] = useState(0);
+
+  // 캔들스틱 색상 동적 적용 (GitHub 예제 방식)
+  useEffect(() => {
+    if (chartRef.current && ohlcvData.length > 0) {
+      const chart = chartRef.current;
+      setTimeout(() => {
+        try {
+          // 캔들스틱 데이터셋 찾기
+          const candlestickDataset = chart.data.datasets.find(dataset => dataset.type === 'candlestick');
+          if (candlestickDataset) {
+            // GitHub 예제 방식으로 색상 적용
+            candlestickDataset.backgroundColors = {
+              up: '#f44336',
+              down: '#2196f3',
+              unchanged: '#999'
+            };
+            candlestickDataset.borderColors = {
+              up: '#f44336',
+              down: '#2196f3',
+              unchanged: '#999'
+            };
+            chart.update('none');
+          }
+        } catch (error) {
+          console.warn('Chart color update failed:', error);
+        }
+      }, 500);
+    }
+  }, [ohlcvData]);
   
   // 차트 데이터 변경 시 라벨 위치 업데이트
   useEffect(() => {
@@ -287,24 +317,25 @@ function Presentation() {
       {
         label: '캔들스틱',
         type: 'candlestick',
-        data: ohlcvData.map(item => ({
-          x: new Date(item.date).getTime(),
-          o: item.open,
-          h: item.high,
-          l: item.low,
-          c: item.close
-        })),
-        borderColor: function(context) {
-          const data = context.parsed;
-          return data.c >= data.o ? '#4caf50' : '#f44336';
+        data: ohlcvData.map((item, index) => {
+          // 거래정지 일자 처리: 시가, 고가, 저가가 0이면 종가로 통일
+          const isHalted = (item.open === 0 || item.high === 0 || item.low === 0) && item.close > 0;
+          return {
+            x: index,
+            o: isHalted ? item.close : item.open,
+            h: isHalted ? item.close : item.high,
+            l: isHalted ? item.close : item.low,
+            c: item.close
+          };
+        }),
+        backgroundColors: {
+          up: '#f44336',
+          down: '#2196f3',
+          unchanged: '#999'
         },
-        backgroundColor: function(context) {
-          const data = context.parsed;
-          return data.c >= data.o ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)';
-        },
-        color: {
-          up: '#4caf50',
-          down: '#f44336',
+        borderColors: {
+          up: '#f44336',
+          down: '#2196f3',
           unchanged: '#999'
         },
         order: 1
@@ -348,8 +379,8 @@ function Presentation() {
         type: 'line',
         data: analysisData
           .filter(item => item.ma50 !== null && item.ma50 !== undefined && !isNaN(item.ma50))
-          .map(item => ({
-            x: new Date(item.date).getTime(),
+          .map((item, index) => ({
+            x: index,
             y: item.ma50
           })),
         borderColor: '#ff6b35',
@@ -367,8 +398,8 @@ function Presentation() {
         type: 'line',
         data: analysisData
           .filter(item => item.ma150 !== null && item.ma150 !== undefined && !isNaN(item.ma150))
-          .map(item => ({
-            x: new Date(item.date).getTime(),
+          .map((item, index) => ({
+            x: index,
             y: item.ma150
           })),
         borderColor: '#f7931e',
@@ -386,8 +417,8 @@ function Presentation() {
         type: 'line',
         data: analysisData
           .filter(item => item.ma200 !== null && item.ma200 !== undefined && !isNaN(item.ma200))
-          .map(item => ({
-            x: new Date(item.date).getTime(),
+          .map((item, index) => ({
+            x: index,
             y: item.ma200
           })),
         borderColor: '#9c27b0',
@@ -412,24 +443,25 @@ function Presentation() {
         {
           label: '인덱스 캔들스틱',
           type: 'candlestick',
-          data: indexOhlcvData.map(item => ({
-            x: new Date(item.date).getTime(),
-            o: item.open,
-            h: item.high,
-            l: item.low,
-            c: item.close
-          })),
-          borderColor: function(context) {
-            const data = context.parsed;
-            return data.c >= data.o ? '#2196f3' : '#ff9800';
+          data: indexOhlcvData.map((item, index) => {
+            // 거래정지 일자 처리: 시가, 고가, 저가가 0이면 종가로 통일
+            const isHalted = (item.open === 0 || item.high === 0 || item.low === 0) && item.close > 0;
+            return {
+              x: index,
+              o: isHalted ? item.close : item.open,
+              h: isHalted ? item.close : item.high,
+              l: isHalted ? item.close : item.low,
+              c: item.close
+            };
+          }),
+          backgroundColors: {
+            up: '#f44336',
+            down: '#2196f3',
+            unchanged: '#999'
           },
-          backgroundColor: function(context) {
-            const data = context.parsed;
-            return data.c >= data.o ? 'rgba(33, 150, 243, 0.8)' : 'rgba(255, 152, 0, 0.8)';
-          },
-          color: {
-            up: '#2196f3',
-            down: '#ff9800',
+          borderColors: {
+            up: '#f44336',
+            down: '#2196f3',
             unchanged: '#999'
           }
         }
@@ -446,15 +478,15 @@ function Presentation() {
         {
           label: '거래량',
           type: 'bar',
-          data: ohlcvData.map(item => ({
-            x: new Date(item.date).getTime(),
+          data: ohlcvData.map((item, index) => ({
+            x: index,
             y: item.volume || 0
           })),
           backgroundColor: ohlcvData.map(item => 
-            item.close >= item.open ? 'rgba(76, 175, 80, 0.6)' : 'rgba(244, 67, 54, 0.6)'
+            item.close >= item.open ? 'rgba(244, 67, 54, 0.6)' : 'rgba(33, 150, 243, 0.6)'
           ),
           borderColor: ohlcvData.map(item => 
-            item.close >= item.open ? '#4caf50' : '#f44336'
+            item.close >= item.open ? '#f44336' : '#2196f3'
           ),
           borderWidth: 1
         }
@@ -473,11 +505,11 @@ function Presentation() {
           type: 'line',
           data: analysisData
             .filter(item => item.rsRank !== null && item.rsRank !== undefined && !isNaN(item.rsRank))
-            .map(item => ({
-              x: new Date(item.date).getTime(),
+            .map((item, index) => ({
+              x: index,
               y: item.rsRank
             })),
-          borderColor: '#667eea',
+          borderColor: '#f44336',
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: 3,
@@ -489,11 +521,11 @@ function Presentation() {
           type: 'line',
           data: analysisData
             .filter(item => item.rsRank1m !== null && item.rsRank1m !== undefined && !isNaN(item.rsRank1m))
-            .map(item => ({
-              x: new Date(item.date).getTime(),
+            .map((item, index) => ({
+              x: index,
               y: item.rsRank1m
             })),
-          borderColor: '#ff6b35',
+          borderColor: '#4caf50',
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: 2,
@@ -505,11 +537,11 @@ function Presentation() {
           type: 'line',
           data: analysisData
             .filter(item => item.rsRank3m !== null && item.rsRank3m !== undefined && !isNaN(item.rsRank3m))
-            .map(item => ({
-              x: new Date(item.date).getTime(),
+            .map((item, index) => ({
+              x: index,
               y: item.rsRank3m
             })),
-          borderColor: '#f7931e',
+          borderColor: '#2196f3',
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: 2,
@@ -521,8 +553,8 @@ function Presentation() {
           type: 'line',
           data: analysisData
             .filter(item => item.rsRank6m !== null && item.rsRank6m !== undefined && !isNaN(item.rsRank6m))
-            .map(item => ({
-              x: new Date(item.date).getTime(),
+            .map((item, index) => ({
+              x: index,
               y: item.rsRank6m
             })),
           borderColor: '#9c27b0',
@@ -537,11 +569,11 @@ function Presentation() {
           type: 'line',
           data: analysisData
             .filter(item => item.rsRank12m !== null && item.rsRank12m !== undefined && !isNaN(item.rsRank12m))
-            .map(item => ({
-              x: new Date(item.date).getTime(),
+            .map((item, index) => ({
+              x: index,
               y: item.rsRank12m
             })),
-          borderColor: '#2196f3',
+          borderColor: '#000000',
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: 2,
@@ -1053,18 +1085,16 @@ function Presentation() {
     },
     scales: {
       x: {
-        type: 'time',
-        time: {
-          unit: 'day',
-          displayFormats: {
-            day: 'MM/dd'
-          }
-        },
+        type: 'category',
+        labels: ohlcvData.map(item => new Date(item.date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })),
         grid: {
           display: true,
           color: 'rgba(0,0,0,0.05)',
         },
         ticks: {
+          autoSkip: true,
+          autoSkipPadding: 10,
+          maxTicksLimit: 10,
           color: '#666',
           font: {
             size: 12
@@ -1112,7 +1142,8 @@ function Presentation() {
       tooltip: {
         callbacks: {
           title: function(context) {
-            return new Date(context[0].parsed.x).toLocaleDateString('ko-KR');
+            const index = context[0].parsed.x;
+            return ohlcvData[index] ? new Date(ohlcvData[index].date).toLocaleDateString('ko-KR') : '';
           },
           beforeBody: function(context) {
             const candleData = context.find(ctx => ctx.dataset.label === '캔들스틱');
@@ -1170,18 +1201,16 @@ function Presentation() {
     },
     scales: {
       x: {
-        type: 'time',
-        time: {
-          unit: 'day',
-          displayFormats: {
-            day: 'MM/dd'
-          }
-        },
+        type: 'category',
+        labels: indexOhlcvData.map(item => new Date(item.date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })),
         grid: {
           display: true,
           color: 'rgba(0,0,0,0.05)',
         },
         ticks: {
+          autoSkip: true,
+          autoSkipPadding: 10,
+          maxTicksLimit: 8,
           color: '#666',
           font: {
             size: 10
@@ -1227,7 +1256,8 @@ function Presentation() {
       tooltip: {
         callbacks: {
           title: function(context) {
-            return new Date(context[0].parsed.x).toLocaleDateString('ko-KR');
+            const index = context[0].parsed.x;
+            return indexOhlcvData[index] ? new Date(indexOhlcvData[index].date).toLocaleDateString('ko-KR') : '';
           },
           beforeBody: function(context) {
             const data = context[0].parsed;
@@ -1279,18 +1309,16 @@ function Presentation() {
     },
     scales: {
       x: {
-        type: 'time',
-        time: {
-          unit: 'day',
-          displayFormats: {
-            day: 'MM/dd'
-          }
-        },
+        type: 'category',
+        labels: ohlcvData.map(item => new Date(item.date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })),
         grid: {
           display: true,
           color: 'rgba(0,0,0,0.05)',
         },
         ticks: {
+          autoSkip: true,
+          autoSkipPadding: 10,
+          maxTicksLimit: 8,
           color: '#666',
           font: {
             size: 10
@@ -1338,7 +1366,8 @@ function Presentation() {
       tooltip: {
         callbacks: {
           title: function(context) {
-            return new Date(context[0].parsed.x).toLocaleDateString('ko-KR');
+            const index = context[0].parsed.x;
+            return ohlcvData[index] ? new Date(ohlcvData[index].date).toLocaleDateString('ko-KR') : '';
           },
           label: function(context) {
             return `거래량: ${new Intl.NumberFormat('ko-KR').format(context.parsed.y)}`;
@@ -1375,18 +1404,16 @@ function Presentation() {
     },
     scales: {
       x: {
-        type: 'time',
-        time: {
-          unit: 'day',
-          displayFormats: {
-            day: 'MM/dd'
-          }
-        },
+        type: 'category',
+        labels: analysisData.map(item => new Date(item.date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })),
         grid: {
           display: true,
           color: 'rgba(0,0,0,0.05)',
         },
         ticks: {
+          autoSkip: true,
+          autoSkipPadding: 10,
+          maxTicksLimit: 8,
           color: '#666',
           font: {
             size: 10
@@ -1442,7 +1469,8 @@ function Presentation() {
       tooltip: {
         callbacks: {
           title: function(context) {
-            return new Date(context[0].parsed.x).toLocaleDateString('ko-KR');
+            const index = context[0].parsed.x;
+            return analysisData[index] ? new Date(analysisData[index].date).toLocaleDateString('ko-KR') : '';
           },
           label: function(context) {
             return `${context.dataset.label}: ${context.parsed.y}`;
@@ -2159,32 +2187,15 @@ function Presentation() {
                             borderRadius: 1,
                             p: 0.5
                           }}>
-                            <MKBox sx={{ 
-                              p: 0.5, 
-                              borderBottom: "1px solid #f0f0f0", 
-                              mb: 0.5,
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center"
-                            }}>
-                              <MKBox>
-                                <MKTypography variant="h6" fontWeight="bold" color="info">
-                                  RS Rank 추이
-                                </MKTypography>
-                                <MKTypography variant="caption" color="text">
-                                  상대강도 순위 (0-100%)
-                                </MKTypography>
-                              </MKBox>
-                            </MKBox>
                             
                             {rsRankData ? (
-                              <MKBox sx={{ height: "calc(100% - 60px)" }}>
+                              <MKBox sx={{ height: "100%" }}>
                                 <Chart type="line" data={rsRankData} options={rsRankOptions} />
                               </MKBox>
                             ) : (
                               <MKBox
                                 sx={{
-                                  height: "calc(100% - 60px)",
+                                  height: "100%",
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
