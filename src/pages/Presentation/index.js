@@ -49,6 +49,12 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import ToggleButton from "@mui/material/ToggleButton";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 
 // Material Kit 2 React components
 import MKBox from "components/MKBox";
@@ -126,6 +132,33 @@ function Presentation() {
   const [selectedLineId, setSelectedLineId] = useState(null); // 선택된 선 ID
   const [showEntryPopup, setShowEntryPopup] = useState(false); // 진입시점 설정 팝업 상태
   
+  // Snackbar 관련 상태
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'info' // 'success', 'error', 'warning', 'info'
+  });
+
+  // 자동매매 목록 관련 상태
+  const [autotradingList, setAutotradingList] = useState([]); // autobot에서 가져온 모든 자동매매 설정
+  const [expandedAccordion, setExpandedAccordion] = useState(null); // 현재 열린 아코디언 (종목코드)
+
+  // Snackbar 헬퍼 함수들
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity
+    });
+  };
+
+  const handleSnackbarClose = (_, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+  
   // 드래그 상태를 즉시 접근 가능하도록 useRef 사용
   const dragStateRef = useRef({
     isDragging: false,
@@ -136,7 +169,6 @@ function Presentation() {
   const chartRef = useRef(null);
   
   // 라벨 위치 강제 업데이트를 위한 상태
-  const [labelUpdateTrigger, setLabelUpdateTrigger] = useState(0);
 
   // 캔들스틱 색상 동적 적용 (GitHub 예제 방식)
   useEffect(() => {
@@ -158,7 +190,7 @@ function Presentation() {
               down: '#2196f3',
               unchanged: '#999'
             };
-            chart.update('none');
+            chart.update('active');
           }
         } catch (error) {
           console.warn('Chart color update failed:', error);
@@ -167,16 +199,42 @@ function Presentation() {
     }
   }, [ohlcvData]);
   
-  // 차트 데이터 변경 시 라벨 위치 업데이트
+
+  // selectedStock 변경 시 자동매매 관련 값들과 수평선 초기화
   useEffect(() => {
-    if (chartRef.current && ohlcvData.length > 0) {
-      // 차트가 완전히 렌더링된 후 라벨 위치 업데이트
-      const timer = setTimeout(() => {
-        setLabelUpdateTrigger(prev => prev + 1);
-      }, 200);
-      return () => clearTimeout(timer);
+    if (selectedStock) {
+      // 수평선 설정 초기화
+      setHorizontalLines([]);
+      setSelectedLineId(null);
+      setIsDrawingMode(false);
+      
+      // 자동매매 탭 입력값 초기화
+      setTradingMode('manual');
+      setMaxLoss('');
+      setStopLoss('');
+      setTakeProfit('');
+      setPyramidingCount(0);
+      setEntryPoint('');
+      setPyramidingEntries([]);
+      setPositions([100]); // 기본적으로 1차 진입 100% 설정
     }
-  }, [ohlcvData, analysisData]);
+  }, [selectedStock]);
+
+  // 피라미딩 카운트 변경 시 포지션 배열 크기 조정
+  useEffect(() => {
+    const totalEntries = pyramidingCount + 1;
+    
+    // 기존 포지션 값 유지하면서 배열 크기만 조정
+    const newPositions = Array(totalEntries).fill(0).map((_, index) => {
+      if (positions[index] !== undefined) {
+        return positions[index]; // 기존 값 유지
+      } else {
+        // 새로 추가되는 포지션은 0으로 초기화
+        return 0;
+      }
+    });
+    setPositions(newPositions);
+  }, [pyramidingCount]);
   
   // 실제 OHLCV 데이터 가져오기
   const fetchOHLCVData = async (stockCode) => {
@@ -344,18 +402,15 @@ function Presentation() {
 
     // 수평선 추가
     horizontalLines.forEach((line, index) => {
-      const timeRange = ohlcvData.length > 0 ? [
-        new Date(ohlcvData[0].date).getTime(),
-        new Date(ohlcvData[ohlcvData.length - 1].date).getTime()
-      ] : [Date.now() - 86400000, Date.now()];
-
+      // 인덱스 기반 좌표계로 변경 (다른 데이터와 일치)
+      const indexRange = ohlcvData.length > 0 ? [0, ohlcvData.length - 1] : [0, 1];
 
       datasets.push({
         label: `진입선 ${index + 1}`,
         type: 'line',
         data: [
-          { x: timeRange[0], y: line.value },
-          { x: timeRange[1], y: line.value }
+          { x: indexRange[0], y: line.value },
+          { x: indexRange[1], y: line.value }
         ],
         borderColor: line.color,
         backgroundColor: 'transparent',
@@ -364,7 +419,7 @@ function Presentation() {
         pointHoverRadius: 8,
         tension: 0,
         borderDash: [5, 5],
-        order: 10 + index,
+        order: 20 + index, // 이동평균선보다 위에 표시되도록 order 값 증가
         hoverBorderWidth: 4,
         hoverBorderColor: '#ff9800',
         lineId: line.id // 커스텀 속성으로 ID 저장
@@ -387,7 +442,7 @@ function Presentation() {
         backgroundColor: 'transparent',
         borderWidth: 2,
         pointRadius: 0,
-        pointHoverRadius: 4,
+        pointHoverRadius: 0,
         tension: 0.1,
         order: 2
       });
@@ -406,7 +461,7 @@ function Presentation() {
         backgroundColor: 'transparent',
         borderWidth: 2,
         pointRadius: 0,
-        pointHoverRadius: 4,
+        pointHoverRadius: 0,
         tension: 0.1,
         order: 3
       });
@@ -425,7 +480,7 @@ function Presentation() {
         backgroundColor: 'transparent',
         borderWidth: 2,
         pointRadius: 0,
-        pointHoverRadius: 4,
+        pointHoverRadius: 0,
         tension: 0.1,
         order: 4
       });
@@ -584,6 +639,69 @@ function Presentation() {
     };
   };
 
+  // 자동매매 설정 저장 함수
+  const saveAutotradingConfig = async () => {
+    if (!selectedStock) {
+      showSnackbar('종목을 먼저 선택해주세요.', 'warning');
+      return;
+    }
+
+    // 필수 입력값 검증
+    const missingFields = getMissingFields();
+    if (missingFields.length > 0) {
+      showSnackbar(`다음 항목들을 입력해주세요: ${missingFields.join(', ')}`, 'warning');
+      return;
+    }
+
+    const config = {
+      stock_code: selectedStock.code,
+      stock_name: selectedStock.name,
+      trading_mode: tradingMode,
+      max_loss: maxLoss ? parseFloat(maxLoss) : null,
+      stop_loss: stopLoss ? parseFloat(stopLoss) : null,
+      take_profit: takeProfit ? parseFloat(takeProfit) : null,
+      pyramiding_count: pyramidingCount,
+      position_size: entryPoint ? parseFloat(entryPoint) : null,
+      pyramiding_entries: pyramidingEntries, // 피라미딩 진입시점 배열
+      positions: positions, // 포지션 배열
+      is_active: true
+    };
+
+    try {
+      // Django backend API 호출로 변경
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${apiBaseUrl}/api/mypage/trading-configs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // TODO: AuthContext에서 JWT 토큰 가져와서 헤더에 추가
+          // 'Authorization': `Bearer ${token}`,
+        },
+        // credentials: 'include', // 임시로 제거
+        body: JSON.stringify(config),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        showSnackbar('자동매매 설정이 성공적으로 저장되었습니다! Django DB에 저장되고 autobot 서버로 전달되었습니다.', 'success');
+        
+        // 저장 성공 후 데이터 새로고침 (알림 없이)
+        await Promise.all([
+          fetchAutotradingList(), // 자동매매 목록 새로고침
+          loadAutobotConfigSilent(selectedStock.code) // 현재 종목 설정 새로고침 (알림 없이)
+        ]);
+      } else {
+        throw new Error(result.error || '설정 저장에 실패했습니다.');
+      }
+      
+    } catch (error) {
+      console.error('자동매매 설정 저장 실패:', error);
+      alert(`설정 저장 실패: ${error.message}`);
+    }
+  };
+
   // API 데이터 가져오기
   useEffect(() => {
     const fetchStockData = async () => {
@@ -652,6 +770,7 @@ function Presentation() {
 
   const handleStockClick = (stock) => {
     setSelectedStock(stock);
+    // 초기화는 useEffect에서 자동으로 처리됨
   };
 
   // 재무제표 모달 열기/닫기
@@ -701,6 +820,12 @@ function Presentation() {
   // 탭 변경 핸들러
   const handleTabChange = (_, newValue) => {
     setActiveTab(newValue);
+    
+    // 자동매매 탭으로 변경될 때 autobot 설정 로드 및 아코디언 열기
+    if (newValue === 1 && selectedStock && selectedStock.code) {
+      loadAutobotConfig(selectedStock.code);
+      setExpandedAccordion(selectedStock.code);
+    }
   };
 
   // KRX 호가단위 계산 함수
@@ -732,27 +857,12 @@ function Presentation() {
     const count = parseInt(event.target.value) || 0;
     setPyramidingCount(count);
     
-    // 피라미딩 횟수에 따른 포지션 계산
-    const totalEntries = count + 1; // 1차 + 피라미딩 횟수
-    const equalPosition = 100 / totalEntries;
-    
-    // 포지션 배열 설정 (1차는 소수점 유지, 2차 이상은 반올림)
-    const newPositions = Array(totalEntries).fill(0).map((_, index) => {
-      if (index === 0) {
-        // 1차 진입시점은 소수점 2자리까지 유지
-        return parseFloat(equalPosition.toFixed(2));
-      } else {
-        // 2차 이상은 반올림
-        return Math.round(equalPosition);
-      }
-    });
-    setPositions(newPositions);
-    
     // 피라미딩 진입시점 배열 크기 조정 (2차부터 시작하므로 count개)
     const newPyramidingEntries = Array(count).fill('').map((_, index) => 
       pyramidingEntries[index] || ''
     );
     setPyramidingEntries(newPyramidingEntries);
+    // 포지션 계산은 useEffect에서 자동으로 처리됨
   };
 
   const handlePyramidingEntryChange = (index, value) => {
@@ -761,8 +871,292 @@ function Presentation() {
     setPyramidingEntries(newPyramidingEntries);
   };
 
+  // 포지션 변경 핸들러
+  const handlePositionChange = (index, value) => {
+    const newPositions = [...positions];
+    newPositions[index] = parseFloat(value) || 0;
+    setPositions(newPositions);
+  };
+
+  // 포지션 균등 분할 핸들러
+  const handleEqualDivision = () => {
+    const totalEntries = pyramidingCount + 1;
+    const basePosition = Math.floor(100 / totalEntries); // 기본 정수값
+    const remainder = 100 - (basePosition * totalEntries); // 나머지
+    
+    const newPositions = Array(totalEntries).fill(0).map((_, index) => {
+      if (index === 0) {
+        // 1차 진입시점에 나머지를 더해줌
+        return basePosition + remainder;
+      } else {
+        return basePosition;
+      }
+    });
+    
+    setPositions(newPositions);
+  };
+
   // 포지션 합계 계산
   const positionSum = positions.reduce((sum, pos) => sum + (parseFloat(pos) || 0), 0);
+
+  // 누락된 항목들을 가져오는 함수
+  const getMissingFields = () => {
+    const missing = [];
+    
+    // 1. 기본 입력값 검증
+    if (!entryPoint || entryPoint.trim() === '') missing.push('1차 진입시점');
+    if (!maxLoss || maxLoss.trim() === '') missing.push('최대손실');
+    if (!stopLoss || stopLoss.trim() === '') missing.push('손절');
+    if (!takeProfit || takeProfit.trim() === '') missing.push('익절');
+    
+    // 2. 피라미딩 진입시점 검증
+    for (let i = 0; i < pyramidingCount; i++) {
+      if (!pyramidingEntries[i] || pyramidingEntries[i].trim() === '') {
+        missing.push(`${i + 2}차 진입시점`);
+      }
+    }
+    
+    // 3. 포지션 합계 검증
+    if (Math.abs(positionSum - 100) >= 0.01) {
+      missing.push('포지션 합계 (100%가 되어야 함)');
+    }
+    
+    // 4. 각 포지션 값 검증
+    for (let i = 0; i < positions.length; i++) {
+      if (!positions[i] || positions[i] <= 0) {
+        missing.push(`${i + 1}차 포지션`);
+      }
+    }
+    
+    return missing;
+  };
+
+  // 폼 유효성 검사 함수
+  const isFormValid = () => {
+    return getMissingFields().length === 0;
+  };
+
+  // autobot 서버에서 설정 로드 함수
+  const loadAutobotConfig = async (stockCode) => {
+    if (!stockCode) return;
+    
+    try {
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${apiBaseUrl}/api/mypage/trading-configs/stock/${stockCode}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const config = await response.json();
+        
+        // 설정값으로 상태 업데이트
+        setTradingMode(config.trading_mode || 'manual');
+        setMaxLoss(config.max_loss ? config.max_loss.toString() : '');
+        setStopLoss(config.stop_loss ? config.stop_loss.toString() : '');
+        setTakeProfit(config.take_profit ? config.take_profit.toString() : '');
+        setPyramidingCount(config.pyramiding_count || 0);
+        setEntryPoint(config.position_size ? config.position_size.toString() : '');
+        
+        // 피라미딩 진입시점 로드 (저장된 값이 있으면 사용, 없으면 기본값)
+        if (config.pyramiding_entries && config.pyramiding_entries.length > 0) {
+          setPyramidingEntries(config.pyramiding_entries);
+        } else {
+          setPyramidingEntries(Array(config.pyramiding_count || 0).fill(''));
+        }
+        
+        // 포지션 로드 (저장된 값이 있으면 사용, 없으면 기본값)
+        if (config.positions && config.positions.length > 0) {
+          setPositions(config.positions.map(pos => parseFloat(pos)));
+        } else {
+          // 기본값으로 균등 분할
+          const totalEntries = (config.pyramiding_count || 0) + 1;
+          const basePosition = Math.floor(100 / totalEntries);
+          const remainder = 100 - (basePosition * totalEntries);
+          
+          const newPositions = Array(totalEntries).fill(0).map((_, index) => {
+            if (index === 0) {
+              return basePosition + remainder; // 1차 진입에 나머지 몰아주기
+            } else {
+              return basePosition;
+            }
+          });
+          setPositions(newPositions);
+        }
+        
+        console.log('🔍 loadAutobotConfig - 받은 설정 데이터:', config);
+        console.log('🔍 pyramiding_entries:', config.pyramiding_entries);
+        console.log('🔍 positions:', config.positions);
+        
+        // 사용자에게 설정 로드 완료 알림
+        showSnackbar(`${selectedStock.name}(${stockCode})의 기존 설정을 불러왔습니다!`, 'success');
+        
+      } else if (response.status === 404) {
+        // 설정이 없으면 기본값 유지 (초기화하지 않음)
+        // 사용자에게 새 설정임을 알림
+        showSnackbar(`${selectedStock.name}(${stockCode})에 대한 기존 설정이 없습니다. 새로 설정해주세요.`, 'info');
+      } else {
+        console.error('autobot 설정 로드 실패:', response.status);
+      }
+      
+    } catch (error) {
+      console.error('autobot 설정 로드 오류:', error);
+    }
+  };
+
+  // autobot 서버에서 설정 로드 함수 (알림 없음)
+  const loadAutobotConfigSilent = async (stockCode) => {
+    if (!stockCode) return;
+    
+    try {
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${apiBaseUrl}/api/mypage/trading-configs/stock/${stockCode}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const config = await response.json();
+        
+        // 설정값으로 상태 업데이트
+        setTradingMode(config.trading_mode || 'manual');
+        setMaxLoss(config.max_loss ? config.max_loss.toString() : '');
+        setStopLoss(config.stop_loss ? config.stop_loss.toString() : '');
+        setTakeProfit(config.take_profit ? config.take_profit.toString() : '');
+        setPyramidingCount(config.pyramiding_count || 0);
+        setEntryPoint(config.position_size ? config.position_size.toString() : '');
+        
+        // 피라미딩 진입시점 로드 (저장된 값이 있으면 사용, 없으면 기본값)
+        if (config.pyramiding_entries && config.pyramiding_entries.length > 0) {
+          setPyramidingEntries(config.pyramiding_entries);
+        } else {
+          setPyramidingEntries(Array(config.pyramiding_count || 0).fill(''));
+        }
+        
+        // 포지션 로드 (저장된 값이 있으면 사용, 없으면 기본값)
+        if (config.positions && config.positions.length > 0) {
+          setPositions(config.positions.map(pos => parseFloat(pos)));
+        } else {
+          // 기본값으로 균등 분할
+          const totalEntries = (config.pyramiding_count || 0) + 1;
+          const basePosition = Math.floor(100 / totalEntries);
+          const remainder = 100 - (basePosition * totalEntries);
+          
+          const newPositions = Array(totalEntries).fill(0).map((_, index) => {
+            if (index === 0) {
+              return basePosition + remainder; // 1차 진입에 나머지 몰아주기
+            } else {
+              return basePosition;
+            }
+          });
+          setPositions(newPositions);
+        }
+        
+        console.log('🔍 loadAutobotConfigSilent - 받은 설정 데이터:', config);
+        console.log('🔍 Silent pyramiding_entries:', config.pyramiding_entries);
+        console.log('🔍 Silent positions:', config.positions);
+        
+      } // 404나 에러 시에는 아무것도 하지 않음 (알림 없음)
+      
+    } catch (error) {
+      console.error('autobot 설정 로드 오류:', error);
+    }
+  };
+
+  // autobot 서버에서 모든 자동매매 설정 목록 가져오기
+  // 1차 데이터 로딩: 자동매매 설정 개요 목록만 가져오기 (성능 최적화)
+  const fetchAutotradingList = async () => {
+    try {
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${apiBaseUrl}/api/mypage/trading-configs/summary`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const summaryConfigs = await response.json();
+        console.log('1차 로딩: 자동매매 개요 데이터:', summaryConfigs);
+        
+        // 개요 데이터에 hasConfig 플래그 추가
+        const configsWithFlag = summaryConfigs.map(config => ({
+          ...config,
+          hasConfig: true
+        }));
+        
+        setAutotradingList(configsWithFlag);
+        
+        // 최초 로드 시에만 알림 표시
+        if (autotradingList.length === 0) {
+          showSnackbar(`${configsWithFlag.length}개의 자동매매 설정을 불러왔습니다.`, 'success');
+        }
+      } else {
+        console.error('자동매매 개요 목록 조회 실패:', response.status);
+        setAutotradingList([]);
+        showSnackbar('자동매매 개요 목록 조회에 실패했습니다.', 'error');
+      }
+      
+    } catch (error) {
+      console.error('자동매매 개요 목록 조회 오류:', error);
+      setAutotradingList([]);
+      showSnackbar(`1차 데이터 로딩 오류: ${error.message}`, 'error');
+    }
+  };
+
+  // 자동매매 탭으로 변경될 때 목록 로드
+  useEffect(() => {
+    if (activeTab === 1) {
+      fetchAutotradingList();
+    }
+  }, [activeTab]);
+
+  // 종목별 통합 목록 생성 (기존 설정 + 신규 종목)
+  const getUnifiedStockList = () => {
+    const configuredStocks = autotradingList.map(config => ({
+      ...config,
+      hasConfig: true
+    }));
+
+    // 현재 선택된 종목이 설정 목록에 없으면 추가
+    if (selectedStock && !autotradingList.find(config => config.stock_code === selectedStock.code)) {
+      configuredStocks.push({
+        stock_code: selectedStock.code,
+        stock_name: selectedStock.name,
+        hasConfig: false,
+        trading_mode: 'manual',
+        is_active: false
+      });
+    }
+
+    return configuredStocks;
+  };
+
+  // 아코디언 핸들러 (두 단계 데이터 로딩)
+  const handleAccordionChange = (stockCode) => (_, isExpanded) => {
+    setExpandedAccordion(isExpanded ? stockCode : null);
+    
+    // 2차 데이터 로딩: 아코디언이 확장될 때만 상세 설정 로드
+    if (isExpanded) {
+      loadAutobotConfigSilent(stockCode);
+    }
+  };
+
+  // 종목 선택 핸들러 (차트 + 아코디언 동시 업데이트)
+  const handleStockSelection = (stock) => {
+    setSelectedStock(stock);
+    setExpandedAccordion(stock.code);
+    // 해당 종목의 autobot 설정 로드
+    loadAutobotConfig(stock.code);
+  };
+
 
   // 수평선 관련 핸들러
   const handleAddHorizontalLine = (yValue) => {
@@ -779,6 +1173,13 @@ function Presentation() {
     if (activeTab === 0) {
       setEntryPoint(yValue.toString());
     }
+    
+    // 차트 강제 업데이트
+    setTimeout(() => {
+      if (chartRef.current) {
+        chartRef.current.update('active');
+      }
+    }, 50);
   };
 
   const handleUpdateHorizontalLine = (id, newValue, updateTradingSettings = true) => {
@@ -809,10 +1210,24 @@ function Presentation() {
         }
       }
     }
+    
+    // 차트 강제 업데이트
+    setTimeout(() => {
+      if (chartRef.current) {
+        chartRef.current.update('active');
+      }
+    }, 50);
   };
 
   const handleDeleteHorizontalLine = (id) => {
     setHorizontalLines(prev => prev.filter(line => line.id !== id));
+    
+    // 차트 강제 업데이트
+    setTimeout(() => {
+      if (chartRef.current) {
+        chartRef.current.update('active');
+      }
+    }, 50);
   };
 
   const toggleDrawingMode = () => {
@@ -979,7 +1394,7 @@ function Presentation() {
     // 1차 진입시점이 설정되어 있는지 확인
     const baseEntryPrice = parseFloat(entryPoint);
     if (!baseEntryPrice || baseEntryPrice <= 0) {
-      alert('1차 진입시점을 먼저 설정해주세요.');
+      showSnackbar('1차 진입시점을 먼저 설정해주세요.', 'warning');
       return;
     }
     
@@ -1108,7 +1523,8 @@ function Presentation() {
         beginAtZero: false,
         grace: '5%',
         grid: {
-          color: 'rgba(0,0,0,0.05)',
+          display: true,
+          color: 'rgba(0,0,0,0.1)',
         },
         ticks: {
           color: '#666',
@@ -1862,8 +2278,8 @@ function Presentation() {
                             // 차트 인스턴스에서 실제 스케일 정보 가져오기
                             let linePosition = 175; // 기본값 (차트 중앙)
                             
-                            // labelUpdateTrigger를 의존성으로 하여 강제 재계산
-                            if (chartRef.current && labelUpdateTrigger >= 0) {
+                            // 차트에서 실제 위치 계산
+                            if (chartRef.current) {
                               const chartInstance = chartRef.current;
                               if (chartInstance.scales && chartInstance.scales.y) {
                                 const yScale = chartInstance.scales.y;
@@ -2502,29 +2918,79 @@ function Presentation() {
                         },
                       }}
                     >
-                      {/* 헤더 */}
-                      <MKBox sx={{ mb: 3, textAlign: 'center' }}>
-                        <MKBox
-                          sx={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            mx: 'auto',
-                            mb: 1,
-                          }}
-                        >
-                          <MKTypography variant="h5" color="white">
-                            🤖
-                          </MKTypography>
-                        </MKBox>
-                        <MKTypography variant="h6" color="text" fontWeight="bold">
+                      {/* 종목별 자동매매 설정 아코디언 */}
+                      <MKBox>
+                        <MKTypography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                           자동매매 설정
                         </MKTypography>
-                      </MKBox>
+                        
+                        {getUnifiedStockList().map((stockConfig) => (
+                          <Accordion 
+                            key={stockConfig.stock_code}
+                            expanded={expandedAccordion === stockConfig.stock_code} 
+                            onChange={handleAccordionChange(stockConfig.stock_code)}
+                            sx={{ mb: 1 }}
+                          >
+                            <AccordionSummary
+                              expandIcon={<ExpandMore />}
+                              sx={{
+                                backgroundColor: stockConfig.hasConfig && stockConfig.is_active ? 'rgba(76, 175, 80, 0.1)' : '#f8f9fa',
+                                '&:hover': { 
+                                  backgroundColor: stockConfig.hasConfig && stockConfig.is_active ? 'rgba(76, 175, 80, 0.2)' : '#e9ecef' 
+                                },
+                                borderRadius: expandedAccordion === stockConfig.stock_code ? '4px 4px 0 0' : '4px',
+                              }}
+                              onClick={() => {
+                                // 다른 종목을 클릭하면 차트도 업데이트
+                                if (selectedStock?.code !== stockConfig.stock_code) {
+                                  const stockToSelect = stockData.find(s => s.code === stockConfig.stock_code);
+                                  if (stockToSelect) {
+                                    handleStockSelection(stockToSelect);
+                                  }
+                                }
+                              }}
+                            >
+                              <MKBox sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                                {stockConfig.hasConfig && stockConfig.is_active && (
+                                  <Chip 
+                                    label="활성" 
+                                    size="small" 
+                                    color="success" 
+                                    sx={{ fontSize: '0.7rem', height: '20px' }}
+                                  />
+                                )}
+                                {!stockConfig.hasConfig && (
+                                  <Chip 
+                                    label="신규" 
+                                    size="small" 
+                                    color="info" 
+                                    sx={{ fontSize: '0.7rem', height: '20px' }}
+                                  />
+                                )}
+                                <MKBox sx={{ flex: 1 }}>
+                                  <MKTypography variant="h6" fontWeight="bold">
+                                    {stockConfig.stock_name} ({stockConfig.stock_code})
+                                  </MKTypography>
+                                  {stockConfig.hasConfig && (
+                                    <MKBox sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                                      <MKTypography variant="caption" color="text">
+                                        진입: {stockConfig.position_size ? `${Number(stockConfig.position_size).toLocaleString()}원` : '-'}
+                                      </MKTypography>
+                                      <MKTypography variant="caption" color="text">
+                                        손절: {stockConfig.stop_loss ? `${stockConfig.stop_loss}${stockConfig.trading_mode === 'manual' ? '%' : 'ATR'}` : '-'}
+                                      </MKTypography>
+                                      <MKTypography variant="caption" color="text">
+                                        익절: {stockConfig.take_profit ? `${stockConfig.take_profit}${stockConfig.trading_mode === 'manual' ? '%' : 'ATR'}` : '-'}
+                                      </MKTypography>
+                                      <MKTypography variant="caption" color="text">
+                                        피라미딩: {stockConfig.pyramiding_count || 0}회
+                                      </MKTypography>
+                                    </MKBox>
+                                  )}
+                                </MKBox>
+                              </MKBox>
+                            </AccordionSummary>
+                            <AccordionDetails sx={{ backgroundColor: '#ffffff' }}>
 
                       {/* 매매 방식 선택 */}
                       <MKBox sx={{ mb: 3 }}>
@@ -2665,13 +3131,33 @@ function Presentation() {
                             <MKTypography variant="subtitle2" fontWeight="bold">
                               포지션 설정
                             </MKTypography>
-                            <MKTypography 
-                              variant="caption" 
-                              color={Math.abs(positionSum - 100) < 0.01 ? 'success' : 'error'}
-                              fontWeight="bold"
-                            >
-                              합계: {positionSum.toFixed(1)}%
-                            </MKTypography>
+                            <MKBox sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <MKTypography 
+                                variant="caption" 
+                                color={Math.abs(positionSum - 100) < 0.01 ? 'success' : 'error'}
+                                fontWeight="bold"
+                              >
+                                합계: {positionSum.toFixed(1)}%
+                              </MKTypography>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={handleEqualDivision}
+                                sx={{
+                                  minWidth: 'auto',
+                                  fontSize: '0.75rem',
+                                  padding: '4px 8px',
+                                  borderColor: '#667eea',
+                                  color: '#667eea',
+                                  '&:hover': {
+                                    borderColor: '#5a6fd8',
+                                    backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                                  },
+                                }}
+                              >
+                                균등분할
+                              </Button>
+                            </MKBox>
                           </MKBox>
                           {/* 1차 진입시점 (항상 표시) */}
                           <MKBox sx={{ display: 'flex', gap: 1, mb: 1 }}>
@@ -2703,7 +3189,7 @@ function Presentation() {
                             <TextField
                               label="포지션"
                               value={positions[0] || 100}
-                              disabled
+                              onChange={(e) => handlePositionChange(0, e.target.value)}
                               size="small"
                               type="number"
                               sx={{
@@ -2750,7 +3236,7 @@ function Presentation() {
                               <TextField
                                 label="포지션"
                                 value={positions[index + 1] || 0}
-                                disabled
+                                onChange={(e) => handlePositionChange(index + 1, e.target.value)}
                                 size="small"
                                 type="number"
                                 sx={{
@@ -2789,12 +3275,22 @@ function Presentation() {
                         <MKBox sx={{ mt: 2, display: 'flex', gap: 1 }}>
                           <Button
                             variant="contained"
+                            onClick={saveAutotradingConfig}
+                            disabled={!isFormValid()}
                             sx={{
                               flex: 1,
-                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              background: isFormValid() 
+                                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                                : '#ccc',
                               color: 'white',
                               '&:hover': {
-                                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                                background: isFormValid() 
+                                  ? 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)'
+                                  : '#ccc',
+                              },
+                              '&:disabled': {
+                                background: '#ccc',
+                                color: '#999',
                               },
                             }}
                           >
@@ -2815,6 +3311,28 @@ function Presentation() {
                             초기화
                           </Button>
                         </MKBox>
+
+                        {/* 누락된 항목 안내 */}
+                        {!isFormValid() && (
+                          <MKBox sx={{ mt: 1, p: 2, borderRadius: 1, backgroundColor: '#fff3e0', border: '1px solid #ffb74d' }}>
+                            <MKTypography variant="caption" color="warning.main" fontWeight="bold">
+                              📝 입력이 필요한 항목들:
+                            </MKTypography>
+                            <MKBox component="ul" sx={{ mt: 0.5, mb: 0, pl: 2 }}>
+                              {getMissingFields().map((field, index) => (
+                                <MKBox component="li" key={index}>
+                                  <MKTypography variant="caption" color="warning.main">
+                                    {field}
+                                  </MKTypography>
+                                </MKBox>
+                              ))}
+                            </MKBox>
+                          </MKBox>
+                        )}
+                      </MKBox>
+                        </AccordionDetails>
+                          </Accordion>
+                        ))}
                       </MKBox>
                     </MKBox>
                   )}
@@ -3111,6 +3629,22 @@ function Presentation() {
           </Button>
         </DialogActions>
       </Dialog>
+      
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
