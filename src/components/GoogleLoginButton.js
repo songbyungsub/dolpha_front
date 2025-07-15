@@ -17,7 +17,7 @@ const GoogleLoginButton = ({ onSuccess, onError, disabled = false }) => {
 
       // Google OAuth URL 생성
       const redirectUri = `${window.location.origin}/auth/callback`;
-      const scope = "email profile openid";
+      const scope = "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid";
       const responseType = "code";
       
       const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -37,7 +37,7 @@ const GoogleLoginButton = ({ onSuccess, onError, disabled = false }) => {
       onSuccess();
       window.location.href = authUrl;
     } catch (error) {
-      console.error("Google 로그인 오류:", error);
+      // Google 로그인 오류
       onError("Google 로그인 중 오류가 발생했습니다.");
     }
   };

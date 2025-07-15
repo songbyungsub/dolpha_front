@@ -26,12 +26,30 @@ export const AuthProvider = ({ children }) => {
         if (token && userInfo) {
           try {
             const parsedUser = JSON.parse(userInfo);
-            setUser(parsedUser);
-            setIsAuthenticated(true);
+            // 토큰 유효성 검증
+            const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+            
+            const testResponse = await fetch(`${baseUrl}/api/mypage/profile`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+            
+            if (testResponse.ok) {
+              setUser(parsedUser);
+              setIsAuthenticated(true);
+            } else {
+              logout();
+            }
           } catch (parseError) {
             // 저장된 사용자 정보가 손상된 경우
             logout();
           }
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
         }
       } catch (error) {
         // 인증 상태 확인 중 오류 발생시 조용히 로그아웃
@@ -90,6 +108,11 @@ export const AuthProvider = ({ children }) => {
       }
 
       const data = await response.json();
+      
+      // 더미 토큰 감지
+      if (data.access_token && data.access_token.includes('dummy')) {
+        throw new Error('서버에서 더미 응답을 반환했습니다. 실제 Google OAuth가 구성되지 않았습니다.');
+      }
       
       if (!data.access_token || !data.refresh_token || !data.user) {
         throw new Error('서버 응답에서 필수 데이터가 누락되었습니다.');
@@ -197,6 +220,11 @@ export const AuthProvider = ({ children }) => {
           ...options,
           headers,
         });
+        
+        if (response.status === 401) {
+          logout();
+          throw new Error('로그인이 만료되었습니다. 다시 로그인해주세요.');
+        }
       } catch (refreshError) {
         logout();
         throw new Error('로그인이 만료되었습니다. 다시 로그인해주세요.');

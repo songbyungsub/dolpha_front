@@ -20,6 +20,7 @@ import MKBox from "components/MKBox";
 import MKTypography from "components/MKTypography";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "contexts/AuthContext";
 
 function ServerSettings() {
   const [serverInfo, setServerInfo] = useState({
@@ -30,6 +31,7 @@ function ServerSettings() {
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [lastConnectionTime, setLastConnectionTime] = useState(null);
+  const { authenticatedFetch } = useAuth();
 
   useEffect(() => {
     // 저장된 서버 정보 불러오기
@@ -40,15 +42,7 @@ function ServerSettings() {
     try {
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
       
-      const response = await fetch(`${apiBaseUrl}/api/mypage/server-settings`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // TODO: AuthContext에서 JWT 토큰 가져와서 헤더에 추가
-          // 'Authorization': `Bearer ${token}`,
-        },
-        // credentials: 'include', // 임시로 제거
-      });
+      const response = await authenticatedFetch(`${apiBaseUrl}/api/mypage/server-settings`);
 
       if (response.ok) {
         const data = await response.json();
@@ -59,11 +53,9 @@ function ServerSettings() {
         setLastConnectionTime(data.last_connection);
         setConnectionStatus(data.server_status === 'online' ? 'connected' : 
                           data.server_status === 'offline' ? 'unknown' : 'failed');
-      } else {
-        console.error("서버 설정 로드 실패:", response.status);
       }
     } catch (error) {
-      console.error("서버 설정 로드 실패:", error);
+      // 서버 설정 로드 실패
     }
   };
 
@@ -79,14 +71,8 @@ function ServerSettings() {
     try {
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
       
-      const response = await fetch(`${apiBaseUrl}/api/mypage/server-connection-test`, {
+      const response = await authenticatedFetch(`${apiBaseUrl}/api/mypage/server-connection-test`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // TODO: AuthContext에서 JWT 토큰 가져와서 헤더에 추가
-          // 'Authorization': `Bearer ${token}`,
-        },
-        // credentials: 'include', // 임시로 제거
         body: JSON.stringify({
           ip: serverInfo.ip,
           port: parseInt(serverInfo.port),
@@ -122,14 +108,8 @@ function ServerSettings() {
     try {
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
       
-      const response = await fetch(`${apiBaseUrl}/api/mypage/server-settings`, {
+      const response = await authenticatedFetch(`${apiBaseUrl}/api/mypage/server-settings`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // TODO: AuthContext에서 JWT 토큰 가져와서 헤더에 추가
-          // 'Authorization': `Bearer ${token}`,
-        },
-        // credentials: 'include', // 임시로 제거
         body: JSON.stringify({
           autobot_server_ip: serverInfo.ip,
           autobot_server_port: parseInt(serverInfo.port),
@@ -144,7 +124,6 @@ function ServerSettings() {
         alert("서버 설정 저장 실패: " + result.error);
       }
     } catch (error) {
-      console.error("서버 설정 저장 실패:", error);
       alert("서버 설정 저장에 실패했습니다: " + error.message);
     } finally {
       setSaveLoading(false);

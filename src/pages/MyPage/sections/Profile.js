@@ -18,6 +18,7 @@ import MKBox from "components/MKBox";
 import MKTypography from "components/MKTypography";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "contexts/AuthContext";
 
 function Profile() {
   const [userInfo, setUserInfo] = useState({
@@ -26,22 +27,52 @@ function Profile() {
     profilePicture: "",
     joinDate: "",
   });
+  const { user, authenticatedFetch } = useAuth();
 
   useEffect(() => {
-    // TODO: AuthContext에서 사용자 정보 가져오기
-    // 임시 데이터
-    setUserInfo({
-      name: "홍길동",
-      email: "test@example.com",
-      profilePicture: "",
-      joinDate: "2024-01-01",
-    });
-  }, []);
+    const loadUserProfile = async () => {
+      try {
+        const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+        const response = await authenticatedFetch(`${baseUrl}/api/mypage/profile`);
+        
+        if (!response.ok) {
+          throw new Error(`API 요청 실패: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const userData = data.user;
+        
+        setUserInfo({
+          name: `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.username,
+          email: userData.email,
+          profilePicture: userData.profile_picture || '',
+          joinDate: userData.date_joined ? new Date(userData.date_joined).toLocaleDateString('ko-KR') : '',
+        });
+      } catch (error) {
+        // 에러 시 AuthContext의 사용자 정보 사용
+        if (user) {
+          setUserInfo({
+            name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+            email: user.email,
+            profilePicture: user.profile_picture || '',
+            joinDate: user.date_joined ? new Date(user.date_joined).toLocaleDateString('ko-KR') : '',
+          });
+        }
+      }
+    };
+    
+    if (user) {
+      loadUserProfile();
+    }
+  }, [user, authenticatedFetch]);
 
-  const handleSave = () => {
-    // TODO: 프로필 업데이트 API 호출
-    console.log("프로필 저장:", userInfo);
-    alert("프로필이 저장되었습니다.");
+  const handleSave = async () => {
+    try {
+      // 현재 Google 로그인 프로필은 읽기 전용이므로 업데이트를 지원하지 않음
+      alert('Google 로그인 사용자의 프로필 정보는 Google 계정에서 관리됩니다.');
+    } catch (error) {
+      alert('프로필 업데이트에 실패했습니다.');
+    }
   };
 
   return (

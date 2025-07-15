@@ -34,13 +34,21 @@ import footerRoutes from "footer.routes";
 
 // MyPage sections
 import ServerSettings from "./sections/ServerSettings";
-import TradingConfigs from "./sections/TradingConfigs";
 import Profile from "./sections/Profile";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 function MyPage() {
   const [activeTab, setActiveTab] = useState(0);
+  const location = useLocation();
+
+  // 다른 페이지에서 특정 탭으로 이동한 경우 처리
+  useEffect(() => {
+    if (location.state && typeof location.state.activeTab === 'number') {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   const handleTabChange = (_, newValue) => {
     setActiveTab(newValue);
@@ -52,8 +60,6 @@ function MyPage() {
         return <Profile />;
       case 1:
         return <ServerSettings />;
-      case 2:
-        return <TradingConfigs />;
       default:
         return <Profile />;
     }
@@ -145,7 +151,6 @@ function MyPage() {
                   >
                     <Tab label="프로필" />
                     <Tab label="서버 설정" />
-                    <Tab label="자동매매 설정" />
                   </Tabs>
                 </MKBox>
                 <MKBox>{renderTabContent()}</MKBox>
