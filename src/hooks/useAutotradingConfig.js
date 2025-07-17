@@ -10,11 +10,14 @@ export const useAutotradingConfig = (authenticatedFetch, showSnackbar) => {
   // 자동매매 목록 가져오기
   const fetchAutotradingList = async () => {
     try {
+      // Django API 기본 URL
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      
       // 첫 번째로 서버 설정이 있는지 확인
       try {
-        const serverResponse = await authenticatedFetch('/api/mypage/server-settings');
+        const serverResponse = await authenticatedFetch(`${apiBaseUrl}/api/mypage/server-settings`);
         if (!serverResponse.ok) {
-          if (serverResponse.status === 401) {
+          if (serverResponse.status === 401 || serverResponse.status === 404) {
             // 서버 설정이 없으면 빈 목록으로 설정하고 종료
             setAutotradingList([]);
             showSnackbar('자동매매 기능을 사용하려면 먼저 autobot 서버 설정을 완료해주세요.', 'warning');
@@ -33,7 +36,7 @@ export const useAutotradingConfig = (authenticatedFetch, showSnackbar) => {
       }
 
       // 서버 설정이 확인되면 자동매매 개요 목록 가져오기
-      const response = await authenticatedFetch('/api/mypage/trading-configs/summary');
+      const response = await authenticatedFetch(`${apiBaseUrl}/api/mypage/trading-configs/summary`);
       
       if (response.ok) {
         const configs = await response.json();
@@ -92,26 +95,70 @@ export const useAutotradingConfig = (authenticatedFetch, showSnackbar) => {
 
   // 자동매매 설정 삭제
   const deleteAutotradingConfig = async (stockCode, stockName) => {
+    console.log(`[FRONTEND] 삭제 요청 시작: stockCode=${stockCode}, stockName=${stockName}`);
+    
+    // 삭제 확인 알림
+    const isConfirmed = window.confirm(`${stockName}(${stockCode})의 자동매매 설정을 삭제하시겠습니까?`);
+    if (!isConfirmed) {
+      console.log(`[FRONTEND] 사용자가 삭제 취소함`);
+      return { success: false, cancelled: true };
+    }
+
     try {
       const configToDelete = autotradingList.find(config => config.stock_code === stockCode);
+      console.log(`[FRONTEND] 삭제 대상 설정:`, configToDelete);
       
       if (configToDelete) {
-        const response = await authenticatedFetch(`/api/mypage/trading-configs/${configToDelete.id}`, {
+        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+        
+        // stock_code를 사용하여 삭제
+        const deleteUrl = `${apiBaseUrl}/api/mypage/trading-configs/stock/${stockCode}`;
+        console.log(`[FRONTEND] 삭제 요청 URL: ${deleteUrl}`);
+        
+        const response = await authenticatedFetch(deleteUrl, {
           method: 'DELETE'
         });
         
+        console.log(`[FRONTEND] 서버 응답: status=${response.status}, ok=${response.ok}`);
+        
         if (response.ok) {
-          // 프론트엔드 상태 업데이트
+          // 204 No Content나 빈 응답인 경우 처리
+          let result = {};
+          try {
+            const text = await response.text();
+            console.log(`[FRONTEND] 서버 응답 텍스트:`, text);
+            if (text) {
+              result = JSON.parse(text);
+              console.log(`[FRONTEND] 파싱된 응답 데이터:`, result);
+            }
+          } catch (parseError) {
+            // JSON 파싱 실패 시에도 HTTP 응답이 ok면 성공으로 간주
+            console.log('[FRONTEND] Response parsing failed, but HTTP status is ok:', parseError);
+          }
+          
+          // HTTP 응답이 ok면 성공으로 처리 (result.success 체크 제거)
+          console.log(`[FRONTEND] 프론트엔드 상태에서 삭제 처리`);
           setAutotradingList(prev => prev.filter(item => item.stock_code !== stockCode));
           showSnackbar(`${stockName}(${stockCode}) 자동매매 설정이 삭제되었습니다.`, 'success');
           
           return { success: true, deletedStock: { code: stockCode, name: stockName } };
         } else {
-          showSnackbar('자동매매 설정 삭제에 실패했습니다.', 'error');
-          return { success: false };
+          let errorResult = {};
+          try {
+            errorResult = await response.json();
+            console.log(`[FRONTEND] 에러 응답 데이터:`, errorResult);
+          } catch (parseError) {
+            console.log('[FRONTEND] Error response parsing failed:', parseError);
+          }
+          throw new Error(errorResult.message || `HTTP ${response.status}: 삭제 요청에 실패했습니다.`);
         }
+      } else {
+        console.log(`[FRONTEND] 삭제할 설정을 찾을 수 없음: stockCode=${stockCode}`);
+        showSnackbar('삭제할 설정을 찾을 수 없습니다.', 'warning');
+        return { success: false };
       }
     } catch (error) {
+      console.error('[FRONTEND] 삭제 에러:', error);
       showSnackbar(`삭제 실패: ${error.message}`, 'error');
       return { success: false };
     }

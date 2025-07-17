@@ -1,71 +1,38 @@
-/*
-=========================================================
-* Material Kit 2 React - v2.1.0
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-kit-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-// @mui material components
+import React, { useState, useEffect } from "react";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
-import Chip from "@mui/material/Chip";
 import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
-import ArrowUpward from "@mui/icons-material/ArrowUpward";
-import ArrowDownward from "@mui/icons-material/ArrowDownward";
-import Assessment from "@mui/icons-material/Assessment";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
-
-// Material Kit 2 React components
-import MKBox from "components/MKBox";
-import MKTypography from "components/MKTypography";
-
-// Material Kit 2 React examples
-import DefaultNavbar from "examples/Navbars/DefaultNavbar";
-
-// Routes
-import routes from "routes";
-
-import { useState, useEffect } from "react";
+import Chip from "@mui/material/Chip";
 import { useAuth } from "contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-// Custom hooks and components
+import MKBox from "components/MKBox";
+import MKTypography from "components/MKTypography";
+import DefaultNavbar from "examples/Navbars/DefaultNavbar";
+import routes from "routes";
+
 import { useNotification } from "components/NotificationSystem/NotificationSystem";
 import { useFinancialData } from "hooks/useFinancialData";
 import { useAutotradingConfig } from "hooks/useAutotradingConfig";
 import { useTradingForm } from "hooks/useTradingForm";
 import { useChartInteractions } from "hooks/useChartInteractions";
+import { useStockData } from "hooks/useStockData";
 import FinancialModal from "components/FinancialModal/FinancialModal";
 import AutotradingAccordion from "components/AutotradingAccordion/AutotradingAccordion";
 import ChartContainer from "components/ChartContainer/ChartContainer";
+import StockInfoHeader from "components/StockInfoHeader/StockInfoHeader";
+import StockList from "components/StockList/StockList";
+import { GRADIENT_COLORS, LAYOUT } from "constants/styles";
 import { formatNumber } from "utils/formatters";
 
 
 function Presentation() {
-  const [stockData, setStockData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedStock, setSelectedStock] = useState(null);
-  const [ohlcvData, setOhlcvData] = useState([]); // OHLCV 데이터 상태 추가
+  const [activeTab, setActiveTab] = useState(0);
   const { isAuthenticated, authenticatedFetch, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [indexData, setIndexData] = useState([]); // 인덱스 데이터 상태 추가
-  const [indexOhlcvData, setIndexOhlcvData] = useState([]); // 인덱스 OHLCV 데이터 상태 추가
-  const [selectedIndexCode, setSelectedIndexCode] = useState(''); // 선택된 인덱스 코드
-  const [analysisData, setAnalysisData] = useState([]); // 주식 분석 데이터 상태 추가
-  const [activeTab, setActiveTab] = useState(0); // 탭 상태 (0: 투자목록, 1: 자동매매)
-  
-  // Custom hooks
   const { showSnackbar, NotificationComponent } = useNotification();
   const { 
     openFinancialModal, 
@@ -83,10 +50,23 @@ function Presentation() {
     handleAccordionChange
   } = useAutotradingConfig(authenticatedFetch, showSnackbar);
   
-  // Trading form hook
+  const {
+    stockData,
+    loading,
+    error,
+    selectedStock,
+    ohlcvData,
+    indexData,
+    indexOhlcvData,
+    selectedIndexCode,
+    analysisData,
+    handleStockClick,
+    handleIndexChange,
+    setSelectedStock
+  } = useStockData();
+  
   const tradingForm = useTradingForm(selectedStock, authenticatedFetch, showSnackbar);
   
-  // Chart interactions hook
   const chartInteractions = useChartInteractions(
     tradingForm.entryPoint,
     tradingForm.pyramidingEntries,
@@ -96,118 +76,6 @@ function Presentation() {
     showSnackbar
   );
   
-  
-
-  
-  // 실제 OHLCV 데이터 가져오기
-  const fetchOHLCVData = async (stockCode) => {
-    if (!stockCode) return [];
-    
-    try {
-      chartInteractions.setChartLoading(true);
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/find_stock_ohlcv?code=${stockCode}&limit=63`);
-      if (!response.ok) {
-        throw new Error('OHLCV 데이터를 가져올 수 없습니다');
-      }
-      const result = await response.json();
-      const data = result.data || [];
-      
-      // 날짜순으로 정렬 (오래된 날짜부터)
-      const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
-      setOhlcvData(sortedData);
-      return sortedData;
-    } catch (err) {
-      // OHLCV 데이터 로드 실패
-      setOhlcvData([]);
-      return [];
-    }
-  };
-
-  // 종목 관련 인덱스 데이터 가져오기
-  const fetchStockIndexData = async (stockCode) => {
-    if (!stockCode) return [];
-    
-    try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/find_stock_index?code=${stockCode}&limit=10`);
-      if (!response.ok) {
-        throw new Error('인덱스 데이터를 가져올 수 없습니다');
-      }
-      const result = await response.json();
-      const data = result.data || [];
-      setIndexData(data);
-      
-      // 첫 번째 인덱스를 기본 선택
-      if (data.length > 0) {
-        setSelectedIndexCode(data[0].code);
-        await fetchIndexOHLCVData(data[0].code);
-      } else {
-        setSelectedIndexCode('');
-        setIndexOhlcvData([]);
-      }
-      
-      return data;
-    } catch (err) {
-      // 인덱스 데이터 로드 실패
-      setIndexData([]);
-      setSelectedIndexCode('');
-      return [];
-    }
-  };
-
-  // 인덱스 OHLCV 데이터 가져오기
-  const fetchIndexOHLCVData = async (indexCode) => {
-    if (!indexCode) return [];
-    
-    try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/find_index_ohlcv?code=${indexCode}&limit=63`);
-      if (!response.ok) {
-        throw new Error('인덱스 OHLCV 데이터를 가져올 수 없습니다');
-      }
-      const result = await response.json();
-      const data = result.data || [];
-      
-      // 날짜순으로 정렬 (오래된 날짜부터)
-      const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
-      setIndexOhlcvData(sortedData);
-      return sortedData;
-    } catch (err) {
-      // 인덱스 OHLCV 데이터 로드 실패
-      setIndexOhlcvData([]);
-      return [];
-    }
-  };
-
-  // 주식 분석 데이터 가져오기
-  const fetchStockAnalysisData = async (stockCode) => {
-    if (!stockCode) return [];
-    
-    try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/find_stock_analysis?code=${stockCode}&limit=63`);
-      if (!response.ok) {
-        throw new Error('주식 분석 데이터를 가져올 수 없습니다');
-      }
-      const result = await response.json();
-      const data = result.data || [];
-      
-      // 날짜순으로 정렬 (오래된 날짜부터)
-      const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
-      setAnalysisData(sortedData);
-      return sortedData;
-    } catch (err) {
-      // 주식 분석 데이터 로드 실패
-      setAnalysisData([]);
-      return [];
-    }
-  };
-
-
-
-
-  // 자동매매 설정 저장 함수
   const saveAutotradingConfig = async () => {
     if (!isAuthenticated) {
       showSnackbar('로그인이 필요합니다.', 'warning');
@@ -216,80 +84,15 @@ function Presentation() {
 
     const success = await tradingForm.saveAutotradingConfig(autotradingList, navigate);
     if (success) {
-      // 저장 성공 후 데이터 새로고침
       await Promise.all([
-        fetchAutotradingList(), // 자동매매 목록 새로고침
-        tradingForm.loadAutobotConfig(selectedStock.code, true) // 현재 종목 설정 새로고침 (알림 없이)
+        fetchAutotradingList(),
+        tradingForm.loadAutobotConfig(selectedStock.code, true)
       ]);
     }
+    return success;
   };
 
-  // API 데이터 가져오기
-  useEffect(() => {
-    const fetchStockData = async () => {
-      try {
-        setLoading(true);
-        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-        const response = await fetch(`${apiBaseUrl}/api/find_stock_inMTT?format=json`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const result = await response.json();
-        const data = result.data || []; // API 응답에서 data 배열 추출
-        setStockData(data);
-        if (data.length > 0) {
-          setSelectedStock(data[0]); // 첫 번째 종목을 기본 선택
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStockData();
-  }, []);
-
-  // 선택된 종목이 변경될 때 OHLCV 데이터 가져오기
-  useEffect(() => {
-    const loadData = async () => {
-      if (selectedStock && selectedStock.code) {
-        try {
-          await Promise.all([
-            fetchOHLCVData(selectedStock.code),
-            fetchStockIndexData(selectedStock.code),
-            fetchStockAnalysisData(selectedStock.code)
-          ]);
-        } finally {
-          // Data loading completed
-        }
-      }
-    };
-    
-    loadData();
-  }, [selectedStock]);
-
-
-  const handleStockClick = (stock) => {
-    setSelectedStock(stock);
-    // 초기화는 useEffect에서 자동으로 처리됨
-  };
-
-
-  // 인덱스 선택 핸들러
-  const handleIndexChange = async (event) => {
-    const indexCode = event.target.value;
-    setSelectedIndexCode(indexCode);
-    if (indexCode) {
-      await fetchIndexOHLCVData(indexCode);
-    } else {
-      setIndexOhlcvData([]);
-    }
-  };
-
-  // 탭 변경 핸들러
   const handleTabChange = (_, newValue) => {
-    // 자동매매 탭(1번)으로 변경할 때 로그인 체크
     if (newValue === 1) {
       if (!authLoading && !isAuthenticated) {
         showSnackbar('자동매매 기능을 사용하려면 로그인이 필요합니다.', 'warning');
@@ -300,32 +103,32 @@ function Presentation() {
     
     setActiveTab(newValue);
     
-    // 자동매매 탭으로 변경될 때 autobot 설정 로드 및 아코디언 열기
-    if (newValue === 1 && selectedStock && selectedStock.code) {
-      tradingForm.loadAutobotConfig(selectedStock.code);
-      handleAccordionChange(selectedStock.code);
+    if (newValue === 1) {
+      // 자동매매 목록 먼저 로드
+      fetchAutotradingList().then(() => {
+        // 선택된 종목이 있으면 해당 종목의 설정 로드
+        if (selectedStock && selectedStock.code) {
+          tradingForm.loadAutobotConfig(selectedStock.code);
+          handleAccordionChange(selectedStock.code);
+        }
+      });
     }
   };
 
+  const handleStockSelection = (stock) => {
+    setSelectedStock(stock);
+    handleAccordionChange(stock.code);
+    // 자동매매 탭에서만 설정 로드
+    if (activeTab === 1) {
+      tradingForm.loadAutobotConfig(stock.code);
+    }
+  };
 
-
-
-  // 자동매매 탭으로 변경될 때 목록 로드
   useEffect(() => {
     if (activeTab === 1) {
       fetchAutotradingList();
     }
   }, [activeTab]);
-
-
-
-  // 종목 선택 핸들러 (차트 + 아코디언 동시 업데이트)
-  const handleStockSelection = (stock) => {
-    setSelectedStock(stock);
-    handleAccordionChange(stock.code);
-    // 해당 종목의 autobot 설정 로드
-    tradingForm.loadAutobotConfig(stock.code);
-  };
 
 
 
@@ -371,134 +174,13 @@ function Presentation() {
             >
               {/* 헤더 부분 */}
               <MKBox sx={{ px: 1, py: 1, pt: 0, flexShrink: 0, borderBottom: "1px solid #e0e0e0" }}>
-                {/* <MKTypography variant="h5" textAlign="center">
-                  {selectedStock ? `${selectedStock.name || '선택된 종목'} 차트` : '차트'}
-                </MKTypography> */}
-                
-                {/* 선택된 종목 정보 */}
                 {selectedStock && (
-                  <MKBox 
-                    p={1.5} 
-                    sx={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      borderRadius: 1,
-                      boxShadow: '0 2px 8px rgba(102, 126, 234, 0.1)',
-                      position: 'relative'
-                    }}
-                  >
-                    <Grid container spacing={1} alignItems="center">
-                      {/* 종목명 & 코드 */}
-                      <Grid item xs={12} sm={3}>
-                        <MKBox>
-                          <MKTypography variant="caption" color="white" sx={{ fontSize: '0.7rem' }}>
-                            종목명
-                          </MKTypography>
-                          <MKBox sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <MKTypography variant="body2" fontWeight="bold" color="white" sx={{ fontSize: '0.85rem', lineHeight: 1.2 }}>
-                              {selectedStock.name || '-'}
-                            </MKTypography>
-                            <MKTypography variant="caption" color="white" sx={{ fontSize: '0.65rem' }}>
-                              ({selectedStock.code || '-'})
-                            </MKTypography>
-                          </MKBox>
-                        </MKBox>
-                      </Grid>
-                      
-                      {/* 마켓 정보 */}
-                      <Grid item xs={12} sm={1.5}>
-                        <MKBox>
-                          <MKTypography variant="caption" color="white" sx={{ fontSize: '0.7rem' }}>
-                            마켓
-                          </MKTypography>
-                          <MKTypography variant="body2" fontWeight="bold" color="white" sx={{ fontSize: '0.85rem' }}>
-                            KOSPI
-                          </MKTypography>
-                        </MKBox>
-                      </Grid>
-                      
-                      {/* 종가 */}
-                      <Grid item xs={12} sm={2.5}>
-                        <MKBox>
-                          <MKTypography variant="caption" color="white" sx={{ fontSize: '0.7rem' }}>
-                            종가
-                          </MKTypography>
-                          <MKTypography variant="body2" fontWeight="bold" color="white" sx={{ fontSize: '0.85rem' }}>
-                            {ohlcvData.length > 0 ? 
-                              new Intl.NumberFormat('ko-KR').format(ohlcvData[ohlcvData.length - 1]?.close) : 
-                              '-'
-                            }
-                          </MKTypography>
-                        </MKBox>
-                      </Grid>
-                      
-                      {/* 등락율 */}
-                      <Grid item xs={12} sm={2.5}>
-                        <MKBox>
-                          <MKTypography variant="caption" color="white" sx={{ fontSize: '0.7rem' }}>
-                            등락율
-                          </MKTypography>
-                          <MKBox sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {ohlcvData.length >= 2 && (
-                              ohlcvData[ohlcvData.length - 1]?.close >= ohlcvData[ohlcvData.length - 2]?.close ? (
-                                <ArrowUpward sx={{ fontSize: '14px', color: 'white' }} />
-                              ) : (
-                                <ArrowDownward sx={{ fontSize: '14px', color: 'white' }} />
-                              )
-                            )}
-                            <MKTypography 
-                              variant="body2" 
-                              fontWeight="bold" 
-                              color="white"
-                              sx={{ fontSize: '0.85rem' }}
-                            >
-                              {ohlcvData.length >= 2 ? 
-                                `${((ohlcvData[ohlcvData.length - 1]?.close - ohlcvData[ohlcvData.length - 2]?.close) / 
-                                   ohlcvData[ohlcvData.length - 2]?.close * 100) >= 0 ? '+' : ''}${(
-                                  (ohlcvData[ohlcvData.length - 1]?.close - ohlcvData[ohlcvData.length - 2]?.close) / 
-                                   ohlcvData[ohlcvData.length - 2]?.close * 100
-                                ).toFixed(2)}%` :
-                                '-'
-                              }
-                            </MKTypography>
-                          </MKBox>
-                        </MKBox>
-                      </Grid>
-                      
-                      {/* ATR */}
-                      <Grid item xs={12} sm={2}>
-                        <MKBox>
-                          <MKTypography variant="caption" color="white" sx={{ fontSize: '0.7rem' }}>
-                            ATR
-                          </MKTypography>
-                          <MKTypography variant="body2" fontWeight="bold" color="white" sx={{ fontSize: '0.85rem' }}>
-                            {analysisData.length > 0 && analysisData[analysisData.length - 1]?.atr ? 
-                              analysisData[analysisData.length - 1].atr.toFixed(1) : 
-                              '-'
-                            }
-                          </MKTypography>
-                        </MKBox>
-                      </Grid>
-                      
-                      {/* 재무제표 버튼 */}
-                      <Grid item xs={12} sm={0.5}>
-                        <MKBox sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'center' }}>
-                          <IconButton
-                            onClick={() => handleOpenFinancialModal(selectedStock)}
-                            sx={{
-                              color: 'white',
-                              padding: '2px',
-                              '&:hover': {
-                                backgroundColor: 'rgba(255,255,255,0.1)',
-                              }
-                            }}
-                            title="재무제표 보기"
-                          >
-                            <Assessment sx={{ fontSize: '18px' }} />
-                          </IconButton>
-                        </MKBox>
-                      </Grid>
-                    </Grid>
-                  </MKBox>
+                  <StockInfoHeader
+                    selectedStock={selectedStock}
+                    ohlcvData={ohlcvData}
+                    analysisData={analysisData}
+                    onOpenFinancialModal={handleOpenFinancialModal}
+                  />
                 )}
               </MKBox>
 
@@ -578,7 +260,8 @@ function Presentation() {
                     onEntryPointChange={tradingForm.setEntryPoint}
                     onPyramidingEntryChange={tradingForm.handlePyramidingEntryChange}
                     onShowSnackbar={showSnackbar}
-                  />)}
+                  />
+                )}
               </MKBox>
             </MKBox>
           </Grid>
@@ -870,12 +553,12 @@ function Presentation() {
                             variant="contained"
                             onClick={() => navigate('/pages/authentication/sign-in')}
                             sx={{
-                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              background: GRADIENT_COLORS.PRIMARY,
                               color: 'white',
                               px: 4,
                               py: 1.5,
                               '&:hover': {
-                                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                                background: GRADIENT_COLORS.PRIMARY_HOVER,
                               },
                             }}
                           >
@@ -886,11 +569,7 @@ function Presentation() {
                         <>
                           {/* 종목별 자동매매 설정 아코디언 */}
                           <MKBox>
-                            <MKTypography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                              자동매매 설정
-                            </MKTypography>
-                        
-                        <AutotradingAccordion
+                            <AutotradingAccordion
                           autotradingList={autotradingList}
                           expandedAccordion={expandedAccordion}
                           onAccordionChange={handleAccordionChange}
@@ -900,6 +579,8 @@ function Presentation() {
                           onStockSelect={handleStockSelection}
                           selectedStock={selectedStock}
                           showSnackbar={showSnackbar}
+                          authenticatedFetch={authenticatedFetch}
+                          tradingForm={tradingForm}
                         />
                           </MKBox>
                         </>
