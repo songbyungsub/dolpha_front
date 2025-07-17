@@ -58,10 +58,24 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
     setPyramidingEntries(newPyramidingEntries);
   };
 
-  const handlePyramidingEntryChange = (index, value) => {
+  const handlePyramidingEntryChange = (index, value, shouldUpdateCount = false) => {
     const newPyramidingEntries = [...pyramidingEntries];
-    newPyramidingEntries[index] = value;
-    setPyramidingEntries(newPyramidingEntries);
+    
+    if (shouldUpdateCount) {
+      while (newPyramidingEntries.length <= index) {
+        newPyramidingEntries.push('');
+      }
+      
+      const newCount = Math.max(pyramidingCount, index + 1);
+      if (newCount !== pyramidingCount) {
+        setPyramidingCount(newCount);
+      }
+    }
+    
+    if (index >= 0 && index < newPyramidingEntries.length) {
+      newPyramidingEntries[index] = value;
+      setPyramidingEntries(newPyramidingEntries);
+    }
   };
 
   const handlePositionChange = (index, value) => {

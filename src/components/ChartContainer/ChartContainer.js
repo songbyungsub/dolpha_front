@@ -21,6 +21,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import IconButton from "@mui/material/IconButton";
 import Close from "@mui/icons-material/Close";
 import Delete from "@mui/icons-material/Delete";
+import Timeline from "@mui/icons-material/Timeline";
 import ToggleButton from "@mui/material/ToggleButton";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
@@ -28,6 +29,7 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Tooltip from "@mui/material/Tooltip";
 import Button from "@mui/material/Button";
+import { keyframes } from "@mui/system";
 
 // Material Kit 2 React components
 import MKBox from "components/MKBox";
@@ -50,6 +52,18 @@ ChartJS.register(
   ChartTooltip,
   Legend
 );
+
+// Animation for popup
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 const ChartContainer = ({
   ohlcvData = [],
@@ -152,6 +166,78 @@ const ChartContainer = ({
       }
     ];
 
+    // Add moving average lines if analysis data is available
+    if (analysisData && analysisData.length > 0) {
+      // 50일선
+      const ma50Data = analysisData
+        .filter(item => item.ma50 !== null && item.ma50 !== undefined && !isNaN(item.ma50))
+        .map((item, index) => ({
+          x: index,
+          y: item.ma50
+        }));
+      
+      if (ma50Data.length > 0) {
+        datasets.push({
+          label: '50일선',
+          type: 'line',
+          data: ma50Data,
+          borderColor: '#ff6b35',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0.1,
+          order: 2
+        });
+      }
+
+      // 150일선
+      const ma150Data = analysisData
+        .filter(item => item.ma150 !== null && item.ma150 !== undefined && !isNaN(item.ma150))
+        .map((item, index) => ({
+          x: index,
+          y: item.ma150
+        }));
+      
+      if (ma150Data.length > 0) {
+        datasets.push({
+          label: '150일선',
+          type: 'line',
+          data: ma150Data,
+          borderColor: '#f7931e',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0.1,
+          order: 3
+        });
+      }
+
+      // 200일선
+      const ma200Data = analysisData
+        .filter(item => item.ma200 !== null && item.ma200 !== undefined && !isNaN(item.ma200))
+        .map((item, index) => ({
+          x: index,
+          y: item.ma200
+        }));
+      
+      if (ma200Data.length > 0) {
+        datasets.push({
+          label: '200일선',
+          type: 'line',
+          data: ma200Data,
+          borderColor: '#9c27b0',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0.1,
+          order: 4
+        });
+      }
+    }
+
     // Add horizontal lines to datasets
     horizontalLines.forEach((line, index) => {
       const indexRange = ohlcvData.length > 0 ? [0, ohlcvData.length - 1] : [0, 1];
@@ -171,7 +257,7 @@ const ChartContainer = ({
         tension: 0,
         lineId: line.id,
         showLine: true,
-        borderDash: line.type === 'pyramiding' ? [5, 5] : []
+        borderDash: [5, 5]
       });
     });
 
@@ -238,41 +324,136 @@ const ChartContainer = ({
   const createRSRankData = (analysisData) => {
     if (!analysisData || analysisData.length === 0) return null;
 
-    return {
-      datasets: [
-        {
-          label: 'RS Rank',
-          type: 'line',
-          data: analysisData
-            .filter(item => item.rsRank !== null && item.rsRank !== undefined && !isNaN(item.rsRank))
-            .map((item, index) => ({
-              x: index,
-              y: item.rsRank
-            })),
-          borderColor: '#f44336',
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          tension: 0.1
-        },
-        {
-          label: 'RS Rank 기준선',
-          type: 'line',
-          data: [
-            { x: 0, y: 80 },
-            { x: analysisData.length - 1, y: 80 }
-          ],
-          borderColor: '#ff9800',
-          backgroundColor: 'transparent',
-          borderWidth: 1,
-          pointRadius: 0,
-          pointHoverRadius: 0,
-          tension: 0,
-          borderDash: [5, 5]
-        }
-      ]
-    };
+    const datasets = [];
+
+    // RS Rank 기본 데이터
+    const rsRankData = analysisData
+      .filter(item => item.rsRank !== null && item.rsRank !== undefined && !isNaN(item.rsRank))
+      .map((item, index) => ({
+        x: index,
+        y: item.rsRank
+      }));
+    
+    if (rsRankData.length > 0) {
+      datasets.push({
+        label: 'RS Rank',
+        type: 'line',
+        data: rsRankData,
+        borderColor: '#f44336',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        tension: 0.1
+      });
+    }
+
+    // RS Rank 1M 데이터
+    const rsRank1mData = analysisData
+      .filter(item => item.rsRank1m !== null && item.rsRank1m !== undefined && !isNaN(item.rsRank1m))
+      .map((item, index) => ({
+        x: index,
+        y: item.rsRank1m
+      }));
+    
+    if (rsRank1mData.length > 0) {
+      datasets.push({
+        label: 'RS Rank 1M',
+        type: 'line',
+        data: rsRank1mData,
+        borderColor: '#4caf50',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        tension: 0.1
+      });
+    }
+
+    // RS Rank 3M 데이터
+    const rsRank3mData = analysisData
+      .filter(item => item.rsRank3m !== null && item.rsRank3m !== undefined && !isNaN(item.rsRank3m))
+      .map((item, index) => ({
+        x: index,
+        y: item.rsRank3m
+      }));
+    
+    if (rsRank3mData.length > 0) {
+      datasets.push({
+        label: 'RS Rank 3M',
+        type: 'line',
+        data: rsRank3mData,
+        borderColor: '#2196f3',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        tension: 0.1
+      });
+    }
+
+    // RS Rank 6M 데이터
+    const rsRank6mData = analysisData
+      .filter(item => item.rsRank6m !== null && item.rsRank6m !== undefined && !isNaN(item.rsRank6m))
+      .map((item, index) => ({
+        x: index,
+        y: item.rsRank6m
+      }));
+    
+    if (rsRank6mData.length > 0) {
+      datasets.push({
+        label: 'RS Rank 6M',
+        type: 'line',
+        data: rsRank6mData,
+        borderColor: '#9c27b0',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        tension: 0.1
+      });
+    }
+
+    // RS Rank 12M 데이터
+    const rsRank12mData = analysisData
+      .filter(item => item.rsRank12m !== null && item.rsRank12m !== undefined && !isNaN(item.rsRank12m))
+      .map((item, index) => ({
+        x: index,
+        y: item.rsRank12m
+      }));
+    
+    if (rsRank12mData.length > 0) {
+      datasets.push({
+        label: 'RS Rank 12M',
+        type: 'line',
+        data: rsRank12mData,
+        borderColor: '#000000',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        tension: 0.1
+      });
+    }
+
+    // RS Rank 기준선
+    datasets.push({
+      label: 'RS Rank 기준선',
+      type: 'line',
+      data: [
+        { x: 0, y: 80 },
+        { x: analysisData.length - 1, y: 80 }
+      ],
+      borderColor: '#ff9800',
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      tension: 0,
+      borderDash: [5, 5]
+    });
+
+    return { datasets };
   };
 
   // Event handlers for horizontal lines
@@ -404,7 +585,29 @@ const ChartContainer = ({
           const adjustedValue = adjustToKRXTickSize(newValue);
           
           setHorizontalLines(prev => 
-            prev.map(line => line.id === refDragLineId ? { ...line, value: adjustedValue } : line)
+            prev.map(line => {
+              if (line.id === refDragLineId) {
+                const updatedLine = { ...line, value: adjustedValue };
+                
+                if (line.type === 'entry') {
+                  onEntryPointChange(adjustedValue.toString());
+                }
+                else if (line.type === 'pyramiding') {
+                  const baseEntryPrice = parseFloat(entryPoint);
+                  if (baseEntryPrice && baseEntryPrice > 0) {
+                    const percentage = ((adjustedValue - baseEntryPrice) / baseEntryPrice * 100).toFixed(2);
+                    const percentageStr = percentage.toString();
+                    
+                    if (line.pyramidingIndex !== undefined && line.pyramidingIndex >= 0 && line.pyramidingIndex < pyramidingEntries.length) {
+                      onPyramidingEntryChange(line.pyramidingIndex, percentageStr);
+                    }
+                  }
+                }
+                
+                return updatedLine;
+              }
+              return line;
+            })
           );
         }
       } catch (error) {
@@ -462,7 +665,7 @@ const ChartContainer = ({
     }
   };
 
-  const connectLineToPyramiding = (lineId) => {
+  const connectLineToPyramiding = (lineId, index) => {
     const line = horizontalLines.find(l => l.id === lineId);
     if (!line) return;
     
@@ -474,13 +677,13 @@ const ChartContainer = ({
     
     const adjustedPrice = adjustToKRXTickSize(line.value);
     const percentage = ((adjustedPrice - baseEntryPrice) / baseEntryPrice * 100).toFixed(2);
-    const percentageStr = percentage > 0 ? `+${percentage}` : percentage.toString();
+    const percentageStr = percentage.toString();
     
-    onPyramidingEntryChange(pyramidingEntries.length, percentageStr);
+    onPyramidingEntryChange(index, percentageStr, true);
     
     setHorizontalLines(prev => 
       prev.map(l => 
-        l.id === lineId ? { ...l, type: 'pyramiding', color: '#ff9800' } : l
+        l.id === lineId ? { ...l, type: 'pyramiding', color: '#ff9800', pyramidingIndex: index } : l
       )
     );
   };
@@ -884,61 +1087,6 @@ const ChartContainer = ({
 
   return (
     <MKBox sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* Chart controls */}
-      <MKBox sx={{ 
-        display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        mb: 1, 
-        px: 1 
-      }}>
-        <MKBox sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <Tooltip title={isDrawingMode ? "수평선 그리기 종료" : "수평선 그리기 시작"}>
-            <ToggleButton
-              value="drawing"
-              selected={isDrawingMode}
-              onChange={toggleDrawingMode}
-              size="small"
-              sx={{
-                border: '1px solid #667eea',
-                color: isDrawingMode ? 'white' : '#667eea',
-                backgroundColor: isDrawingMode ? '#667eea' : 'transparent',
-                '&:hover': {
-                  backgroundColor: isDrawingMode ? '#5a6fd8' : 'rgba(102, 126, 234, 0.1)',
-                },
-                '&.Mui-selected': {
-                  backgroundColor: '#667eea',
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: '#5a6fd8',
-                  },
-                },
-              }}
-            >
-              📏
-            </ToggleButton>
-          </Tooltip>
-          
-          {horizontalLines.length > 0 && (
-            <Tooltip title="모든 수평선 삭제">
-              <IconButton
-                onClick={() => setHorizontalLines([])}
-                size="small"
-                sx={{
-                  border: '1px solid #f44336',
-                  color: '#f44336',
-                  backgroundColor: 'transparent',
-                  '&:hover': {
-                    backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                  },
-                }}
-              >
-                <Delete sx={{ fontSize: '16px' }} />
-              </IconButton>
-            </Tooltip>
-          )}
-        </MKBox>
-      </MKBox>
 
       {/* Main chart content */}
       <MKBox sx={{ position: "relative", flex: 1 }}>
@@ -959,6 +1107,61 @@ const ChartContainer = ({
           </MKBox>
         ) : chartData && ohlcvData.length > 0 ? (
           <>
+            {/* Chart controls - positioned inside chart */}
+            <MKBox sx={{ 
+              position: 'absolute', 
+              top: 8, 
+              right: 8, 
+              zIndex: 1000,
+              display: 'flex',
+              gap: 1
+            }}>
+              <Tooltip title={isDrawingMode ? "수평선 그리기 종료" : "수평선 그리기 시작"}>
+                <ToggleButton
+                  value="drawing"
+                  selected={isDrawingMode}
+                  onChange={toggleDrawingMode}
+                  size="small"
+                  sx={{
+                    border: '1px solid #667eea',
+                    color: isDrawingMode ? 'white' : '#667eea',
+                    backgroundColor: isDrawingMode ? '#667eea' : 'transparent',
+                    '&:hover': {
+                      backgroundColor: isDrawingMode ? '#5a6fd8' : 'rgba(102, 126, 234, 0.1)',
+                    },
+                    '&.Mui-selected': {
+                      backgroundColor: '#667eea',
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: '#5a6fd8',
+                      },
+                    },
+                  }}
+                >
+                  <Timeline sx={{ fontSize: '16px' }} />
+                </ToggleButton>
+              </Tooltip>
+              
+              {horizontalLines.length > 0 && (
+                <Tooltip title="모든 수평선 삭제">
+                  <IconButton
+                    onClick={() => setHorizontalLines([])}
+                    size="small"
+                    sx={{
+                      border: '1px solid #f44336',
+                      color: '#f44336',
+                      backgroundColor: 'transparent',
+                      '&:hover': {
+                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                      },
+                    }}
+                  >
+                    <Delete sx={{ fontSize: '16px' }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </MKBox>
+
             {/* Horizontal line labels */}
             {horizontalLines.map((line) => {
               let linePosition = 175;
@@ -1000,7 +1203,7 @@ const ChartContainer = ({
                   sx={{
                     position: 'absolute',
                     top: `${linePosition}px`,
-                    right: 8,
+                    left: 8,
                     zIndex: 1000,
                     display: 'flex',
                     alignItems: 'center',
@@ -1083,18 +1286,19 @@ const ChartContainer = ({
             {showEntryPopup && selectedLineId && (
               <MKBox sx={{
                 position: 'absolute',
-                top: 20,
-                right: 20,
-                zIndex: 1001,
-                backgroundColor: 'white',
-                border: '1px solid #ddd',
-                borderRadius: 2,
-                p: 2,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                top: 40,
+                right: 8,
+                zIndex: 1002,
+                backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                borderRadius: 1,
+                p: 1,
+                border: '2px solid #667eea',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                animation: `${fadeIn} 0.2s ease-in-out`,
                 minWidth: 200
               }}>
                 <MKBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <MKTypography variant="subtitle2" fontWeight="bold">
+                  <MKTypography variant="caption" fontWeight="bold" sx={{ fontSize: '12px' }}>
                     진입시점 설정 ({horizontalLines.find(l => l.id === selectedLineId)?.value}원)
                   </MKTypography>
                   <IconButton
@@ -1106,6 +1310,7 @@ const ChartContainer = ({
                   </IconButton>
                 </MKBox>
                 <MKBox sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  {/* 1차 진입시점 버튼 */}
                   <Button
                     size="small"
                     variant="outlined"
@@ -1113,21 +1318,44 @@ const ChartContainer = ({
                       connectLineToEntry(selectedLineId);
                       setShowEntryPopup(false);
                     }}
-                    sx={{ fontSize: '11px', py: 0.5 }}
+                    sx={{ 
+                      fontSize: '10px', 
+                      py: 0.5,
+                      borderColor: '#667eea',
+                      color: '#667eea',
+                      '&:hover': {
+                        borderColor: '#5a6fd8',
+                        backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                      }
+                    }}
                   >
                     1차 진입시점으로 설정
                   </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => {
-                      connectLineToPyramiding(selectedLineId);
-                      setShowEntryPopup(false);
-                    }}
-                    sx={{ fontSize: '11px', py: 0.5 }}
-                  >
-                    피라미딩 진입시점으로 설정
-                  </Button>
+                  
+                  {/* 피라미딩 진입시점 버튼들 - 동적 생성 */}
+                  {pyramidingEntries.map((_, index) => (
+                    <Button
+                      key={index}
+                      size="small"
+                      variant="outlined"
+                      onClick={() => {
+                        connectLineToPyramiding(selectedLineId, index);
+                        setShowEntryPopup(false);
+                      }}
+                      sx={{ 
+                        fontSize: '10px', 
+                        py: 0.5,
+                        borderColor: '#ff9800',
+                        color: '#ff9800',
+                        '&:hover': {
+                          borderColor: '#f57c00',
+                          backgroundColor: 'rgba(255, 152, 0, 0.04)',
+                        }
+                      }}
+                    >
+                      {index + 2}차 진입시점으로 설정
+                    </Button>
+                  ))}
                 </MKBox>
               </MKBox>
             )}
