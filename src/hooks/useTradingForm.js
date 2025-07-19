@@ -19,9 +19,9 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
   useEffect(() => {
     if (selectedStock) {
       setTradingMode('manual');
-      setMaxLoss('');
-      setStopLoss('');
-      setTakeProfit('');
+      setMaxLoss('2');
+      setStopLoss('8');
+      setTakeProfit('24');
       setPyramidingCount(0);
       setEntryPoint('');
       setPyramidingEntries([]);
@@ -45,7 +45,25 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
 
   // Trading form handlers
   const handleTradingModeChange = (event) => {
-    setTradingMode(event.target.value);
+    const newMode = event.target.value;
+    setTradingMode(newMode);
+    
+    // 모드 변경 시 해당 모드의 기본값으로 설정
+    if (newMode === 'turtle') {
+      setMaxLoss('2');
+      setStopLoss('2');
+      setTakeProfit('6');
+      setPyramidingCount(2);
+      setPyramidingEntries(['1', '2']);
+      setPositions([34, 33, 33]);
+    } else if (newMode === 'manual') {
+      setMaxLoss('2');
+      setStopLoss('8');
+      setTakeProfit('24');
+      setPyramidingCount(0);
+      setPyramidingEntries([]);
+      setPositions([100]);
+    }
   };
 
   const handlePyramidingCountChange = (event) => {
@@ -252,9 +270,9 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
   // Reset form
   const resetTradingForm = () => {
     setTradingMode('manual');
-    setMaxLoss('');
-    setStopLoss('');
-    setTakeProfit('');
+    setMaxLoss('2');
+    setStopLoss('8');
+    setTakeProfit('24');
     setPyramidingCount(0);
     setEntryPoint('');
     setPyramidingEntries([]);
