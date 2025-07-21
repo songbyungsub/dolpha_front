@@ -17,7 +17,7 @@ import React from "react";
 import * as ReactDOMClient from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "App";
-import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 
 const container = document.getElementById("root");
 
@@ -32,10 +32,10 @@ root.render(
 
 serviceWorkerRegistration.register({
   onUpdate: (registration) => {
-    alert('New version available! Please refresh.');
+    alert("New version available! Please refresh.");
     window.location.reload();
   },
   onSuccess: (registration) => {
-    console.log('Service Worker registered successfully.');
+    console.log("Service Worker registered successfully.");
   },
 });

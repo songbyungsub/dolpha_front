@@ -29,9 +29,9 @@ function AuthCallback() {
         const code = urlParams.get("code");
         const error = urlParams.get("error");
         const state = urlParams.get("state");
-        
+
         // State 검증 (CSRF 보호)
-        if (state && !state.startsWith('dolpha_login_')) {
+        if (state && !state.startsWith("dolpha_login_")) {
           setStatus("error");
           setMessage("잘못된 인증 요청입니다.");
           timeoutRef.current = setTimeout(() => navigate("/pages/authentication/sign-in"), 3000);
@@ -63,7 +63,7 @@ function AuthCallback() {
           setStatus("error");
           // 사용자 친화적인 에러 메시지로 변환
           let userFriendlyMessage = "로그인 처리 중 문제가 발생했습니다.";
-          
+
           if (result.error) {
             if (result.error.includes("fetch")) {
               userFriendlyMessage = "네트워크 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.";
@@ -73,11 +73,10 @@ function AuthCallback() {
               userFriendlyMessage = "서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.";
             }
           }
-          
+
           setMessage(userFriendlyMessage);
           timeoutRef.current = setTimeout(() => navigate("/pages/authentication/sign-in"), 3000);
         }
-
       } catch (error) {
         setStatus("error");
         setMessage("로그인 처리 중 예상치 못한 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");

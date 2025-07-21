@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from 'contexts/AuthContext';
-import MKBox from 'components/MKBox';
-import MKTypography from 'components/MKTypography';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "contexts/AuthContext";
+import MKBox from "components/MKBox";
+import MKTypography from "components/MKTypography";
 
 const ProtectedRoute = ({ children }) => {
   const { user, isAuthenticated, loading } = useAuth();
@@ -10,8 +10,8 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      alert('로그인이 필요한 페이지입니다.');
-      navigate('/pages/authentication/sign-in');
+      alert("로그인이 필요한 페이지입니다.");
+      navigate("/pages/authentication/sign-in");
     }
   }, [isAuthenticated, loading, navigate]);
 

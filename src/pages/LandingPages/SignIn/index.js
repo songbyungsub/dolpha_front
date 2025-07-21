@@ -60,7 +60,6 @@ function SignInBasic() {
     setError(errorMessage);
   };
 
-
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -131,26 +130,26 @@ function SignInBasic() {
                 </MKTypography>
               </MKBox>
               <MKBox pt={4} pb={3} px={3}>
-{error && (
+                {error && (
                   <MKBox mb={2} p={2} sx={{ backgroundColor: "#ffebee", borderRadius: 1 }}>
                     <MKTypography variant="body2" color="error">
                       {error}
                     </MKTypography>
                   </MKBox>
                 )}
-                
-<GoogleLoginButton
+
+                <GoogleLoginButton
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
                   disabled={loading}
                 />
-                
-<MKBox sx={{ textAlign: "center", my: 3 }}>
+
+                <MKBox sx={{ textAlign: "center", my: 3 }}>
                   <MKTypography variant="body2" color="text">
                     또는
                   </MKTypography>
                 </MKBox>
-                
+
                 <MKBox component="form" role="form" onSubmit={handleEmailLogin}>
                   <MKBox mb={2}>
                     <MKInput

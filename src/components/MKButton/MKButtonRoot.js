@@ -18,7 +18,13 @@ Coded by www.creative-tim.com
 import Button from "@mui/material/Button";
 import { styled } from "@mui/material/styles";
 
-export default styled(Button)(({ theme, ownerState }) => {
+export default styled(Button, {
+  shouldForwardProp: (prop) => {
+    // Filter out custom props that MUI Button doesn't understand
+    const customProps = ['ownerState', 'circular', 'iconOnly'];
+    return !customProps.includes(prop);
+  }
+})(({ theme, ownerState }) => {
   const { palette, functions, borders, boxShadows } = theme;
   const { color, variant, size, circular, iconOnly } = ownerState;
 

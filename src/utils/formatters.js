@@ -8,19 +8,31 @@
  * @returns {string} 포맷된 문자열
  */
 export const formatNumber = (value) => {
-  if (!value || value === 0) return '0';
-  
+  if (!value || value === 0) return "0";
+
   const numValue = Number(value);
   if (isNaN(numValue)) return value;
 
   const absValue = Math.abs(numValue);
-  
-  if (absValue >= 1000000000000) { // 조 단위 (1조 = 1,000,000,000,000)
-    return `${(numValue / 1000000000000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}조`;
-  } else if (absValue >= 100000000) { // 억 단위 (1억 = 100,000,000)
-    return `${(numValue / 100000000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}억`;
-  } else if (absValue >= 10000) { // 만 단위
-    return `${(numValue / 10000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}만`;
+
+  if (absValue >= 1000000000000) {
+    // 조 단위 (1조 = 1,000,000,000,000)
+    return `${(numValue / 1000000000000).toLocaleString(undefined, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}조`;
+  } else if (absValue >= 100000000) {
+    // 억 단위 (1억 = 100,000,000)
+    return `${(numValue / 100000000).toLocaleString(undefined, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}억`;
+  } else if (absValue >= 10000) {
+    // 만 단위
+    return `${(numValue / 10000).toLocaleString(undefined, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}만`;
   } else {
     return numValue.toLocaleString();
   }
@@ -32,19 +44,31 @@ export const formatNumber = (value) => {
  * @returns {string} 포맷된 문자열
  */
 export const formatFinancialAmount = (amount) => {
-  if (!amount || amount === 0) return '0';
-  
+  if (!amount || amount === 0) return "0";
+
   const numValue = Number(amount);
   if (isNaN(numValue)) return amount;
 
   const absAmount = Math.abs(numValue);
-  
-  if (absAmount >= 1000000000000) { // 조 단위
-    return `${(numValue / 1000000000000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}조`;
-  } else if (absAmount >= 100000000) { // 억 단위
-    return `${(numValue / 100000000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}억`;
-  } else if (absAmount >= 10000) { // 만 단위
-    return `${(numValue / 10000).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}만`;
+
+  if (absAmount >= 1000000000000) {
+    // 조 단위
+    return `${(numValue / 1000000000000).toLocaleString(undefined, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}조`;
+  } else if (absAmount >= 100000000) {
+    // 억 단위
+    return `${(numValue / 100000000).toLocaleString(undefined, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}억`;
+  } else if (absAmount >= 10000) {
+    // 만 단위
+    return `${(numValue / 10000).toLocaleString(undefined, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}만`;
   } else {
     return numValue.toLocaleString();
   }
@@ -57,7 +81,7 @@ export const formatFinancialAmount = (amount) => {
  */
 export const getKRXTickSize = (price) => {
   const numPrice = parseFloat(price) || 0;
-  
+
   if (numPrice < 1000) return 1;
   if (numPrice < 5000) return 5;
   if (numPrice < 10000) return 10;

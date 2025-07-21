@@ -40,8 +40,8 @@ function ServerSettings() {
 
   const loadServerSettings = async () => {
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+
       const response = await authenticatedFetch(`${apiBaseUrl}/api/mypage/server-settings`);
 
       if (response.ok) {
@@ -51,8 +51,13 @@ function ServerSettings() {
           port: data.autobot_server_port ? String(data.autobot_server_port) : "8080",
         });
         setLastConnectionTime(data.last_connection);
-        setConnectionStatus(data.server_status === 'online' ? 'connected' : 
-                          data.server_status === 'offline' ? 'unknown' : 'failed');
+        setConnectionStatus(
+          data.server_status === "online"
+            ? "connected"
+            : data.server_status === "offline"
+            ? "unknown"
+            : "failed"
+        );
       }
     } catch (error) {
       // 서버 설정 로드 실패
@@ -69,10 +74,10 @@ function ServerSettings() {
     setConnectionStatus("testing");
 
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+
       const response = await authenticatedFetch(`${apiBaseUrl}/api/mypage/server-connection-test`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
           ip: serverInfo.ip,
           port: parseInt(serverInfo.port),
@@ -80,7 +85,7 @@ function ServerSettings() {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         setConnectionStatus("connected");
         setLastConnectionTime(new Date().toLocaleString());
@@ -106,10 +111,10 @@ function ServerSettings() {
     setSaveLoading(true);
 
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      
+      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+
       const response = await authenticatedFetch(`${apiBaseUrl}/api/mypage/server-settings`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
           autobot_server_ip: serverInfo.ip,
           autobot_server_port: parseInt(serverInfo.port),
@@ -117,7 +122,7 @@ function ServerSettings() {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         alert("서버 설정이 저장되었습니다!");
       } else {
@@ -175,9 +180,7 @@ function ServerSettings() {
                     label="서버 IP 주소"
                     placeholder="예: 192.168.1.100"
                     value={serverInfo.ip}
-                    onChange={(e) =>
-                      setServerInfo({ ...serverInfo, ip: e.target.value })
-                    }
+                    onChange={(e) => setServerInfo({ ...serverInfo, ip: e.target.value })}
                     variant="outlined"
                     helperText="autobot 서버가 실행 중인 컴퓨터의 IP 주소"
                   />
@@ -187,9 +190,7 @@ function ServerSettings() {
                     fullWidth
                     label="포트"
                     value={serverInfo.port}
-                    onChange={(e) =>
-                      setServerInfo({ ...serverInfo, port: e.target.value })
-                    }
+                    onChange={(e) => setServerInfo({ ...serverInfo, port: e.target.value })}
                     variant="outlined"
                     helperText="기본값: 8080"
                   />
@@ -212,6 +213,7 @@ function ServerSettings() {
               <MKBox display="flex" gap={2} mt={4}>
                 <Button
                   variant="outlined"
+                  color="primary"
                   onClick={testConnection}
                   disabled={loading}
                   sx={{
@@ -234,6 +236,7 @@ function ServerSettings() {
                 </Button>
                 <Button
                   variant="contained"
+                  color="primary"
                   onClick={saveSettings}
                   disabled={saveLoading}
                   sx={{

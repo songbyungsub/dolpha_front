@@ -453,11 +453,11 @@ function DefaultNavbar({ brand, routes, transparent, light, action, sticky, rela
   return (
     <Container sx={sticky ? { position: "sticky", top: 0, zIndex: 10 } : null}>
       <MKBox
-        py={1}
-        px={{ xs: 4, sm: transparent ? 2 : 3, lg: transparent ? 0 : 2 }}
-        my={relative ? 0 : 2}
-        mx={relative ? 0 : 3}
-        width={relative ? "100%" : "calc(100% - 48px)"}
+        py={{ xs: 0.5, md: 1 }}
+        px={{ xs: 2, sm: transparent ? 2 : 3, lg: transparent ? 0 : 2 }}
+        my={relative ? 0 : { xs: 1, md: 2 }}
+        mx={relative ? 0 : { xs: 1, md: 3 }}
+        width={relative ? "100%" : { xs: "calc(100% - 16px)", md: "calc(100% - 48px)" }}
         borderRadius="xl"
         shadow={transparent ? "none" : "md"}
         color={light ? "white" : "dark"}
@@ -474,10 +474,15 @@ function DefaultNavbar({ brand, routes, transparent, light, action, sticky, rela
             component={Link}
             to="/"
             lineHeight={1}
-            py={transparent ? 1.5 : 0.75}
+            py={transparent ? { xs: 1, md: 1.5 } : { xs: 0.5, md: 0.75 }}
             pl={relative || transparent ? 0 : { xs: 0, lg: 1 }}
           >
-            <MKTypography variant="button" fontWeight="bold" color={light ? "white" : "white"}>
+            <MKTypography
+              variant="button"
+              fontWeight="bold"
+              color={light ? "white" : "white"}
+              sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}
+            >
               {brand}
             </MKTypography>
           </MKBox>
@@ -501,7 +506,12 @@ function DefaultNavbar({ brand, routes, transparent, light, action, sticky, rela
                       : "gradient"
                   }
                   color={action.color ? action.color : "info"}
-                  size="small"
+                  size="medium"
+                  sx={{
+                    minWidth: { xs: "auto", md: "64px" },
+                    fontSize: { xs: "0.75rem", md: "0.875rem" },
+                    padding: { xs: "4px 8px", md: "8px 16px" },
+                  }}
                 >
                   {action.label}
                 </MKButton>
@@ -517,7 +527,12 @@ function DefaultNavbar({ brand, routes, transparent, light, action, sticky, rela
                       : "gradient"
                   }
                   color={action.color ? action.color : "info"}
-                  size="small"
+                  size="medium"
+                  sx={{
+                    minWidth: { xs: "auto", md: "64px" },
+                    fontSize: { xs: "0.75rem", md: "0.875rem" },
+                    padding: { xs: "4px 8px", md: "8px 16px" },
+                  }}
                 >
                   {action.label}
                 </MKButton>
@@ -526,13 +541,26 @@ function DefaultNavbar({ brand, routes, transparent, light, action, sticky, rela
           <MKBox
             display={{ xs: "inline-block", lg: "none" }}
             lineHeight={0}
-            py={1.5}
-            pl={1.5}
+            py={{ xs: 1, md: 1.5 }}
+            pl={{ xs: 1, md: 1.5 }}
             color={transparent ? "white" : "white"}
-            sx={{ cursor: "pointer" }}
+            sx={{
+              cursor: "pointer",
+              minWidth: { xs: "44px", md: "48px" },
+              minHeight: { xs: "44px", md: "48px" },
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 1,
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+              },
+            }}
             onClick={openMobileNavbar}
           >
-            <Icon fontSize="default">{mobileNavbar ? "close" : "menu"}</Icon>
+            <Icon sx={{ fontSize: { xs: "1.5rem", md: "1.75rem" } }}>
+              {mobileNavbar ? "close" : "menu"}
+            </Icon>
           </MKBox>
         </MKBox>
         <MKBox

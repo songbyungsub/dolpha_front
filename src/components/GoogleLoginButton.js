@@ -9,7 +9,7 @@ const GoogleLoginButton = ({ onSuccess, onError, disabled = false }) => {
     try {
       // Google Client ID 확인
       const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-      
+
       if (!clientId || clientId === "your-google-client-id-here") {
         onError("Google Client ID가 설정되지 않았습니다. .env 파일을 확인해주세요.");
         return;
@@ -17,20 +17,21 @@ const GoogleLoginButton = ({ onSuccess, onError, disabled = false }) => {
 
       // Google OAuth URL 생성
       const redirectUri = `${window.location.origin}/auth/callback`;
-      const scope = "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid";
+      const scope =
+        "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid";
       const responseType = "code";
-      
-      const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+
+      const baseUrl = "https://accounts.google.com/o/oauth2/v2/auth";
       const params = new URLSearchParams({
         client_id: clientId,
         redirect_uri: redirectUri,
         scope: scope,
         response_type: responseType,
-        access_type: 'offline',
-        prompt: 'consent',
-        state: 'dolpha_login_' + Date.now()
+        access_type: "offline",
+        prompt: "consent",
+        state: "dolpha_login_" + Date.now(),
       });
-      
+
       const authUrl = `${baseUrl}?${params.toString()}`;
 
       // Google 로그인 페이지로 리디렉션
@@ -47,6 +48,7 @@ const GoogleLoginButton = ({ onSuccess, onError, disabled = false }) => {
       <Button
         fullWidth
         variant="outlined"
+        color="primary"
         onClick={handleGoogleLogin}
         disabled={disabled}
         startIcon={<Google />}

@@ -30,8 +30,17 @@ const XL = `@media (min-width: ${xl}px)`;
 const XXL = `@media (min-width: ${xxl}px)`;
 
 const sharedClasses = {
-  paddingRight: `${pxToRem(24)} !important`,
-  paddingLeft: `${pxToRem(24)} !important`,
+  paddingRight: `${pxToRem(16)} !important`,
+  paddingLeft: `${pxToRem(16)} !important`,
+  marginRight: "auto !important",
+  marginLeft: "auto !important",
+  width: "100% !important",
+  position: "relative",
+};
+
+const sharedClassesMobile = {
+  paddingRight: `${pxToRem(12)} !important`,
+  paddingLeft: `${pxToRem(12)} !important`,
   marginRight: "auto !important",
   marginLeft: "auto !important",
   width: "100% !important",
@@ -39,6 +48,10 @@ const sharedClasses = {
 };
 
 export default {
+  ".MuiContainer-root": {
+    ...sharedClassesMobile,
+    maxWidth: "100% !important",
+  },
   [SM]: {
     ".MuiContainer-root": {
       ...sharedClasses,

@@ -22,18 +22,55 @@ import PropTypes from "prop-types";
 import MKButtonRoot from "components/MKButton/MKButtonRoot";
 
 const MKButton = forwardRef(
-  ({ color, variant, size, circular, iconOnly, children, ...rest }, ref) => (
-    <MKButtonRoot
-      {...rest}
-      ref={ref}
-      color="primary"
-      variant={variant === "gradient" ? "contained" : variant}
-      size={size}
-      ownerState={{ color, variant, size, circular, iconOnly }}
-    >
-      {children}
-    </MKButtonRoot>
-  )
+  ({ color, variant, size, circular, iconOnly, children, ...rest }, ref) => {
+    // Debug logging to catch problematic props
+    if (typeof color !== 'string' && color !== undefined) {
+      console.warn('MKButton received non-string color:', color, typeof color);
+    }
+    if (typeof variant !== 'string' && variant !== undefined) {
+      console.warn('MKButton received non-string variant:', variant, typeof variant);
+    }
+    if (typeof size !== 'string' && size !== undefined) {
+      console.warn('MKButton received non-string size:', size, typeof size);
+    }
+
+    // Convert custom colors to valid MUI Button colors
+    const getMuiColor = (customColor) => {
+      // Handle undefined, null, or empty string
+      if (!customColor || typeof customColor !== 'string') {
+        return "default";
+      }
+      
+      switch (customColor) {
+        case "white":
+        case "light":
+        case "dark":
+          return "default";
+        case "info":
+        case "success":
+        case "warning":
+        case "error":
+        case "primary":
+        case "secondary":
+          return customColor;
+        default:
+          return "default";
+      }
+    };
+
+    return (
+      <MKButtonRoot
+        {...rest}
+        ref={ref}
+        color={getMuiColor(color)}
+        variant={variant === "gradient" ? "contained" : (variant || "contained")}
+        size={typeof size === 'string' ? size : "medium"}
+        ownerState={{ color, variant, size, circular, iconOnly }}
+      >
+        {children}
+      </MKButtonRoot>
+    );
+  }
 );
 
 // Setting default values for the props of MKButton

@@ -45,7 +45,7 @@ function MyPage() {
 
   // 다른 페이지에서 특정 탭으로 이동한 경우 처리
   useEffect(() => {
-    if (location.state && typeof location.state.activeTab === 'number') {
+    if (location.state && typeof location.state.activeTab === "number") {
       setActiveTab(location.state.activeTab);
     }
   }, [location.state]);
@@ -78,7 +78,7 @@ function MyPage() {
         sticky
       />
       <MKBox
-        minHeight="75vh"
+        minHeight={{ xs: "50vh", md: "75vh" }}
         width="100%"
         sx={{
           backgroundImage: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -86,6 +86,7 @@ function MyPage() {
           backgroundPosition: "top",
           display: "grid",
           placeItems: "center",
+          pt: { xs: 8, md: 0 },
         }}
       >
         <Container>
@@ -93,11 +94,14 @@ function MyPage() {
             <MKTypography
               variant="h1"
               color="white"
-              mt={-6}
+              mt={{ xs: -4, md: -6 }}
               mb={1}
               sx={({ breakpoints, typography: { size } }) => ({
                 [breakpoints.down("md")]: {
-                  fontSize: size["3xl"],
+                  fontSize: size["2xl"],
+                },
+                [breakpoints.down("sm")]: {
+                  fontSize: size["xl"],
                 },
               })}
             >
@@ -107,8 +111,11 @@ function MyPage() {
               variant="body1"
               color="white"
               textAlign="center"
-              px={{ xs: 6, lg: 12 }}
+              px={{ xs: 2, sm: 6, lg: 12 }}
               mt={1}
+              sx={{
+                fontSize: { xs: "0.9rem", md: "1rem" },
+              }}
             >
               자동매매 서버 설정 및 개인정보를 관리하세요
             </MKTypography>
@@ -117,24 +124,25 @@ function MyPage() {
       </MKBox>
       <Card
         sx={{
-          p: 2,
-          mx: { xs: 2, lg: 3 },
-          mt: -8,
+          p: { xs: 1, sm: 2 },
+          mx: { xs: 1, sm: 2, lg: 3 },
+          mt: { xs: -6, md: -8 },
           mb: 4,
           backgroundColor: ({ palette: { white }, functions: { rgba } }) => rgba(white.main, 0.8),
           backdropFilter: "saturate(200%) blur(30px)",
           boxShadow: ({ boxShadows: { xxl } }) => xxl,
         }}
       >
-        <MKBox component="section" py={6}>
+        <MKBox component="section" py={{ xs: 3, md: 6 }}>
           <Container>
-            <Grid container spacing={3} justifyContent="center">
+            <Grid container spacing={{ xs: 2, md: 3 }} justifyContent="center">
               <Grid item xs={12}>
-                <MKBox mb={3}>
+                <MKBox mb={{ xs: 2, md: 3 }}>
                   <Tabs
                     value={activeTab}
                     onChange={handleTabChange}
                     centered
+                    variant="fullWidth"
                     sx={{
                       "& .MuiTabs-indicator": {
                         backgroundColor: "#667eea",
@@ -142,6 +150,9 @@ function MyPage() {
                       "& .MuiTab-root": {
                         color: "#666",
                         fontWeight: 500,
+                        fontSize: { xs: "0.9rem", md: "1rem" },
+                        minWidth: { xs: "auto", md: 160 },
+                        padding: { xs: "8px 16px", md: "12px 24px" },
                         "&.Mui-selected": {
                           color: "#667eea",
                           fontWeight: 600,

@@ -28,18 +28,17 @@ import StockList from "components/StockList/StockList";
 import { GRADIENT_COLORS, LAYOUT } from "constants/styles";
 import { formatNumber } from "utils/formatters";
 
-
 function Presentation() {
   const [activeTab, setActiveTab] = useState(0);
   const { isAuthenticated, authenticatedFetch, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { showSnackbar, NotificationComponent } = useNotification();
-  const { 
-    openFinancialModal, 
-    financialData, 
-    financialLoading, 
-    handleOpenFinancialModal, 
-    handleCloseFinancialModal 
+  const {
+    openFinancialModal,
+    financialData,
+    financialLoading,
+    handleOpenFinancialModal,
+    handleCloseFinancialModal,
   } = useFinancialData();
   const {
     autotradingList,
@@ -47,9 +46,9 @@ function Presentation() {
     fetchAutotradingList,
     deleteAutotradingConfig,
     toggleAutotradingConfig,
-    handleAccordionChange
+    handleAccordionChange,
   } = useAutotradingConfig(authenticatedFetch, showSnackbar);
-  
+
   const {
     stockData,
     loading,
@@ -62,11 +61,11 @@ function Presentation() {
     analysisData,
     handleStockClick,
     handleIndexChange,
-    setSelectedStock
+    setSelectedStock,
   } = useStockData();
-  
+
   const tradingForm = useTradingForm(selectedStock, authenticatedFetch, showSnackbar);
-  
+
   const chartInteractions = useChartInteractions(
     tradingForm.entryPoint,
     tradingForm.pyramidingEntries,
@@ -75,10 +74,10 @@ function Presentation() {
     tradingForm.handlePyramidingEntryChange,
     showSnackbar
   );
-  
+
   const saveAutotradingConfig = async () => {
     if (!isAuthenticated) {
-      showSnackbar('로그인이 필요합니다.', 'warning');
+      showSnackbar("로그인이 필요합니다.", "warning");
       return;
     }
 
@@ -86,7 +85,7 @@ function Presentation() {
     if (success) {
       await Promise.all([
         fetchAutotradingList(),
-        tradingForm.loadAutobotConfig(selectedStock.code, true)
+        tradingForm.loadAutobotConfig(selectedStock.code, true),
       ]);
     }
     return success;
@@ -95,14 +94,14 @@ function Presentation() {
   const handleTabChange = (_, newValue) => {
     if (newValue === 1) {
       if (!authLoading && !isAuthenticated) {
-        showSnackbar('자동매매 기능을 사용하려면 로그인이 필요합니다.', 'warning');
-        navigate('/pages/authentication/sign-in');
+        showSnackbar("자동매매 기능을 사용하려면 로그인이 필요합니다.", "warning");
+        navigate("/pages/authentication/sign-in");
         return;
       }
     }
-    
+
     setActiveTab(newValue);
-    
+
     if (newValue === 1) {
       // 자동매매 목록 먼저 로드
       fetchAutotradingList().then(() => {
@@ -130,16 +129,9 @@ function Presentation() {
     }
   }, [activeTab]);
 
-
-
-
-
   return (
     <>
-      <DefaultNavbar
-        routes={routes}
-        sticky
-      />
+      <DefaultNavbar routes={routes} sticky />
       <Box
         sx={{
           height: "100vh",
@@ -152,15 +144,29 @@ function Presentation() {
       >
         {/* 네비게이션 바 높이만큼 패딩 추가 */}
         <Box sx={{ height: "80px", flexShrink: 0 }} />
-        
-        <Grid container spacing={0.5} sx={{ height: "calc(100vh - 80px)", p: 0.5 }}>
+
+        <Grid
+          container
+          spacing={0.5}
+          sx={{
+            height: "calc(100vh - 80px)",
+            p: { xs: 0.5, sm: 0.5 },
+            flexDirection: { xs: "column", md: "row" },
+          }}
+        >
           {/* 왼쪽 차트 영역 */}
-          <Grid item xs={12} md={9} sx={{ 
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden"
-          }}>
+          <Grid
+            item
+            xs={12}
+            md={9}
+            sx={{
+              height: { xs: "60vh", md: "100%" },
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              order: { xs: 1, md: 1 },
+            }}
+          >
             <MKBox
               sx={{
                 backgroundColor: "white",
@@ -191,18 +197,18 @@ function Presentation() {
                   overflow: "auto",
                   display: "flex",
                   flexDirection: "column",
-                  '&::-webkit-scrollbar': {
-                    width: '8px',
+                  "&::-webkit-scrollbar": {
+                    width: "8px",
                   },
-                  '&::-webkit-scrollbar-track': {
-                    background: '#f1f1f1',
-                    borderRadius: '4px',
+                  "&::-webkit-scrollbar-track": {
+                    background: "#f1f1f1",
+                    borderRadius: "4px",
                   },
-                  '&::-webkit-scrollbar-thumb': {
-                    background: '#c1c1c1',
-                    borderRadius: '4px',
-                    '&:hover': {
-                      background: '#a1a1a1',
+                  "&::-webkit-scrollbar-thumb": {
+                    background: "#c1c1c1",
+                    borderRadius: "4px",
+                    "&:hover": {
+                      background: "#a1a1a1",
                     },
                   },
                 }}
@@ -244,7 +250,7 @@ function Presentation() {
                     </MKTypography>
                   </MKBox>
                 )}
-                
+
                 {selectedStock && (
                   <ChartContainer
                     ohlcvData={ohlcvData}
@@ -267,12 +273,18 @@ function Presentation() {
           </Grid>
 
           {/* 오른쪽 종목 목록 */}
-          <Grid item xs={12} md={3} sx={{ 
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden"
-          }}>
+          <Grid
+            item
+            xs={12}
+            md={3}
+            sx={{
+              height: { xs: "calc(40vh - 80px)", md: "100%" },
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              order: { xs: 2, md: 2 },
+            }}
+          >
             <MKBox
               sx={{
                 backgroundColor: "white",
@@ -289,18 +301,21 @@ function Presentation() {
                 <Tabs
                   value={activeTab}
                   onChange={handleTabChange}
+                  variant="fullWidth"
                   sx={{
-                    minHeight: '48px',
-                    '& .MuiTabs-indicator': {
-                      backgroundColor: '#667eea',
-                      height: '3px',
+                    minHeight: { xs: "44px", md: "48px" },
+                    "& .MuiTabs-indicator": {
+                      backgroundColor: "#667eea",
+                      height: "3px",
                     },
-                    '& .MuiTab-root': {
-                      fontWeight: 'bold',
-                      fontSize: '0.9rem',
-                      color: '#666',
-                      '&.Mui-selected': {
-                        color: '#667eea',
+                    "& .MuiTab-root": {
+                      fontWeight: "bold",
+                      fontSize: { xs: "0.8rem", md: "0.9rem" },
+                      color: "#666",
+                      minWidth: "auto",
+                      padding: { xs: "8px 12px", md: "12px 16px" },
+                      "&.Mui-selected": {
+                        color: "#667eea",
                       },
                     },
                   }}
@@ -309,7 +324,7 @@ function Presentation() {
                   <Tab label="자동매매" />
                 </Tabs>
               </MKBox>
-              
+
               {loading && (
                 <MKBox
                   sx={{
@@ -346,33 +361,56 @@ function Presentation() {
                       {/* 테이블 헤더 */}
                       <MKBox
                         sx={{
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                           p: 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                          display: "flex",
+                          alignItems: "center",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                           flexShrink: 0,
                         }}
                       >
                         <Grid container spacing={0}>
-                          <Grid item xs={3.5}>
-                            <MKTypography variant="subtitle2" color="white" fontWeight="bold">
+                          <Grid item xs={4} sm={3.5}>
+                            <MKTypography
+                              variant="subtitle2"
+                              color="white"
+                              fontWeight="bold"
+                              sx={{ fontSize: { xs: "0.7rem", md: "0.875rem" } }}
+                            >
                               종목명
                             </MKTypography>
                           </Grid>
-                          <Grid item xs={2.5}>
-                            <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
-                              RS순위
+                          <Grid item xs={2} sm={2.5}>
+                            <MKTypography
+                              variant="subtitle2"
+                              color="white"
+                              fontWeight="bold"
+                              textAlign="center"
+                              sx={{ fontSize: { xs: "0.7rem", md: "0.875rem" } }}
+                            >
+                              RS
                             </MKTypography>
                           </Grid>
-                          <Grid item xs={3}>
-                            <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
-                              당기매출
+                          <Grid item xs={3} sm={3}>
+                            <MKTypography
+                              variant="subtitle2"
+                              color="white"
+                              fontWeight="bold"
+                              textAlign="center"
+                              sx={{ fontSize: { xs: "0.7rem", md: "0.875rem" } }}
+                            >
+                              매출
                             </MKTypography>
                           </Grid>
-                          <Grid item xs={3}>
-                            <MKTypography variant="subtitle2" color="white" fontWeight="bold" textAlign="center">
-                              영업이익
+                          <Grid item xs={3} sm={3}>
+                            <MKTypography
+                              variant="subtitle2"
+                              color="white"
+                              fontWeight="bold"
+                              textAlign="center"
+                              sx={{ fontSize: { xs: "0.7rem", md: "0.875rem" } }}
+                            >
+                              영업익
                             </MKTypography>
                           </Grid>
                         </Grid>
@@ -382,20 +420,20 @@ function Presentation() {
                       <MKBox
                         sx={{
                           flex: 1,
-                          overflow: 'auto',
-                          backgroundColor: 'white',
-                          '&::-webkit-scrollbar': {
-                            width: '8px',
+                          overflow: "auto",
+                          backgroundColor: "white",
+                          "&::-webkit-scrollbar": {
+                            width: "8px",
                           },
-                          '&::-webkit-scrollbar-track': {
-                            background: '#f1f1f1',
-                            borderRadius: '4px',
+                          "&::-webkit-scrollbar-track": {
+                            background: "#f1f1f1",
+                            borderRadius: "4px",
                           },
-                          '&::-webkit-scrollbar-thumb': {
-                            background: '#c1c1c1',
-                            borderRadius: '4px',
-                            '&:hover': {
-                              background: '#a1a1a1',
+                          "&::-webkit-scrollbar-thumb": {
+                            background: "#c1c1c1",
+                            borderRadius: "4px",
+                            "&:hover": {
+                              background: "#a1a1a1",
                             },
                           },
                         }}
@@ -406,99 +444,117 @@ function Presentation() {
                             onClick={() => handleStockClick(row)}
                             sx={{
                               p: 0.5,
-                              borderBottom: rowIndex === stockData.length - 1 ? 'none' : '1px solid #f0f0f0',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              backgroundColor: selectedStock?.code === row.code 
-                                ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)'
-                                : rowIndex % 2 === 0 ? '#fafafa' : 'white',
-                              '&:hover': {
-                                backgroundColor: 'rgba(102, 126, 234, 0.08)',
-                                transform: 'translateX(4px)',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                                borderLeft: '3px solid #667eea',
+                              borderBottom:
+                                rowIndex === stockData.length - 1 ? "none" : "1px solid #f0f0f0",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
+                              backgroundColor:
+                                selectedStock?.code === row.code
+                                  ? "linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)"
+                                  : rowIndex % 2 === 0
+                                  ? "#fafafa"
+                                  : "white",
+                              "&:hover": {
+                                backgroundColor: "rgba(102, 126, 234, 0.08)",
+                                transform: "translateX(4px)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                                borderLeft: "3px solid #667eea",
                               },
                               ...(selectedStock?.code === row.code && {
-                                borderLeft: '3px solid #667eea',
-                                boxShadow: '0 2px 12px rgba(102, 126, 234, 0.2)',
+                                borderLeft: "3px solid #667eea",
+                                boxShadow: "0 2px 12px rgba(102, 126, 234, 0.2)",
                               }),
                             }}
                           >
                             <Grid container spacing={0} alignItems="center">
-                              <Grid item xs={3.5}>
+                              <Grid item xs={4} sm={3.5}>
                                 <MKBox>
-                                  <MKTypography 
-                                    variant="body2" 
-                                    fontWeight={selectedStock?.code === row.code ? "bold" : "medium"}
+                                  <MKTypography
+                                    variant="body2"
+                                    fontWeight={
+                                      selectedStock?.code === row.code ? "bold" : "medium"
+                                    }
                                     color={selectedStock?.code === row.code ? "info" : "text"}
                                     sx={{
-                                      fontSize: '0.8rem',
+                                      fontSize: { xs: "0.7rem", md: "0.8rem" },
                                       lineHeight: 1.1,
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                      whiteSpace: 'nowrap',
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
                                     }}
                                   >
-                                    {row.name || '-'}
+                                    {row.name || "-"}
                                   </MKTypography>
-                                  <MKTypography 
-                                    variant="caption" 
+                                  <MKTypography
+                                    variant="caption"
                                     color="text"
-                                    sx={{ fontSize: '0.7rem' }}
+                                    sx={{
+                                      fontSize: { xs: "0.6rem", md: "0.7rem" },
+                                      display: { xs: "none", sm: "block" },
+                                    }}
                                   >
-                                    {row.code || ''}
+                                    {row.code || ""}
                                   </MKTypography>
                                 </MKBox>
                               </Grid>
-                              <Grid item xs={2.5}>
+                              <Grid item xs={2} sm={2.5}>
                                 <MKBox display="flex" justifyContent="center">
                                   <Chip
-                                    label={row.rsRank || '-'}
+                                    label={row.rsRank || "-"}
                                     size="small"
                                     sx={{
-                                      backgroundColor: row.rsRank >= 80 ? '#4caf50' : 
-                                                     row.rsRank >= 60 ? '#ff9800' : 
-                                                     row.rsRank >= 40 ? '#f44336' : '#9e9e9e',
-                                      color: 'white',
-                                      fontWeight: 'bold',
-                                      fontSize: '0.7rem',
-                                      minWidth: '35px',
-                                      height: '20px',
+                                      backgroundColor:
+                                        row.rsRank >= 80
+                                          ? "#4caf50"
+                                          : row.rsRank >= 60
+                                          ? "#ff9800"
+                                          : row.rsRank >= 40
+                                          ? "#f44336"
+                                          : "#9e9e9e",
+                                      color: "white",
+                                      fontWeight: "bold",
+                                      fontSize: { xs: "0.6rem", md: "0.7rem" },
+                                      minWidth: { xs: "40px", md: "35px" },
+                                      height: { xs: "32px", md: "20px" },
+                                      cursor: "pointer",
+                                      "&:hover": {
+                                        opacity: 0.8,
+                                      },
                                     }}
                                   />
                                 </MKBox>
                               </Grid>
-                              <Grid item xs={3}>
+                              <Grid item xs={3} sm={3}>
                                 <MKBox display="flex" justifyContent="center" alignItems="center">
-                                  <MKTypography 
-                                    variant="body2" 
+                                  <MKTypography
+                                    variant="body2"
                                     textAlign="center"
-                                    color={row['당기매출'] < 0 ? 'info' : 'text'}
-                                    fontWeight={row['당기매출'] < 0 ? 'bold' : 'bold'}
-                                    sx={{ 
-                                      fontSize: '0.75rem',
-                                      color: row['당기매출'] < 0 ? '#1976d2' : 'inherit',
-                                      fontWeight: row['당기매출'] < 0 ? 'bold' : 'bold'
+                                    color={row["당기매출"] < 0 ? "info" : "text"}
+                                    fontWeight={row["당기매출"] < 0 ? "bold" : "bold"}
+                                    sx={{
+                                      fontSize: { xs: "0.65rem", md: "0.75rem" },
+                                      color: row["당기매출"] < 0 ? "#1976d2" : "inherit",
+                                      fontWeight: row["당기매출"] < 0 ? "bold" : "bold",
                                     }}
                                   >
-                                    {formatNumber(row['당기매출']) || '0'}
+                                    {formatNumber(row["당기매출"]) || "0"}
                                   </MKTypography>
                                 </MKBox>
                               </Grid>
-                              <Grid item xs={3}>
+                              <Grid item xs={3} sm={3}>
                                 <MKBox display="flex" justifyContent="center" alignItems="center">
-                                  <MKTypography 
-                                    variant="body2" 
+                                  <MKTypography
+                                    variant="body2"
                                     textAlign="center"
-                                    color={row['당기영업이익'] < 0 ? 'info' : 'text'}
-                                    fontWeight={row['당기영업이익'] < 0 ? 'bold' : 'bold'}
-                                    sx={{ 
-                                      fontSize: '0.8rem',
-                                      color: row['당기영업이익'] < 0 ? '#1976d2' : 'inherit',
-                                      fontWeight: row['당기영업이익'] < 0 ? 'bold' : 'bold'
+                                    color={row["당기영업이익"] < 0 ? "info" : "text"}
+                                    fontWeight={row["당기영업이익"] < 0 ? "bold" : "bold"}
+                                    sx={{
+                                      fontSize: { xs: "0.65rem", md: "0.8rem" },
+                                      color: row["당기영업이익"] < 0 ? "#1976d2" : "inherit",
+                                      fontWeight: row["당기영업이익"] < 0 ? "bold" : "bold",
                                     }}
                                   >
-                                    {formatNumber(row['당기영업이익']) || '0'}
+                                    {formatNumber(row["당기영업이익"]) || "0"}
                                   </MKTypography>
                                 </MKBox>
                               </Grid>
@@ -514,20 +570,20 @@ function Presentation() {
                     <MKBox
                       sx={{
                         flex: 1,
-                        overflow: 'auto',
-                        p: 2,
-                        '&::-webkit-scrollbar': {
-                          width: '6px',
+                        overflow: "auto",
+                        p: { xs: 1, md: 2 },
+                        "&::-webkit-scrollbar": {
+                          width: "6px",
                         },
-                        '&::-webkit-scrollbar-track': {
-                          background: '#f1f1f1',
-                          borderRadius: '3px',
+                        "&::-webkit-scrollbar-track": {
+                          background: "#f1f1f1",
+                          borderRadius: "3px",
                         },
-                        '&::-webkit-scrollbar-thumb': {
-                          background: '#c1c1c1',
-                          borderRadius: '3px',
-                          '&:hover': {
-                            background: '#a1a1a1',
+                        "&::-webkit-scrollbar-thumb": {
+                          background: "#c1c1c1",
+                          borderRadius: "3px",
+                          "&:hover": {
+                            background: "#a1a1a1",
                           },
                         },
                       }}
@@ -535,29 +591,30 @@ function Presentation() {
                       {!isAuthenticated ? (
                         <MKBox
                           sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
                             py: 4,
-                            textAlign: 'center'
+                            textAlign: "center",
                           }}
                         >
-                          <MKTypography variant="h5" sx={{ mb: 2, color: '#666' }}>
+                          <MKTypography variant="h5" sx={{ mb: 2, color: "#666" }}>
                             로그인이 필요합니다
                           </MKTypography>
-                          <MKTypography variant="body1" sx={{ mb: 3, color: '#888' }}>
+                          <MKTypography variant="body1" sx={{ mb: 3, color: "#888" }}>
                             자동매매 기능을 사용하려면 Google 로그인이 필요합니다.
                           </MKTypography>
                           <Button
                             variant="contained"
-                            onClick={() => navigate('/pages/authentication/sign-in')}
+                            color="primary"
+                            onClick={() => navigate("/pages/authentication/sign-in")}
                             sx={{
                               background: GRADIENT_COLORS.PRIMARY,
-                              color: 'white',
+                              color: "white",
                               px: 4,
                               py: 1.5,
-                              '&:hover': {
+                              "&:hover": {
                                 background: GRADIENT_COLORS.PRIMARY_HOVER,
                               },
                             }}
@@ -570,18 +627,18 @@ function Presentation() {
                           {/* 종목별 자동매매 설정 아코디언 */}
                           <MKBox>
                             <AutotradingAccordion
-                          autotradingList={autotradingList}
-                          expandedAccordion={expandedAccordion}
-                          onAccordionChange={handleAccordionChange}
-                          onToggle={toggleAutotradingConfig}
-                          onDelete={deleteAutotradingConfig}
-                          onRefresh={fetchAutotradingList}
-                          onStockSelect={handleStockSelection}
-                          selectedStock={selectedStock}
-                          showSnackbar={showSnackbar}
-                          authenticatedFetch={authenticatedFetch}
-                          tradingForm={tradingForm}
-                        />
+                              autotradingList={autotradingList}
+                              expandedAccordion={expandedAccordion}
+                              onAccordionChange={handleAccordionChange}
+                              onToggle={toggleAutotradingConfig}
+                              onDelete={deleteAutotradingConfig}
+                              onRefresh={fetchAutotradingList}
+                              onStockSelect={handleStockSelection}
+                              selectedStock={selectedStock}
+                              showSnackbar={showSnackbar}
+                              authenticatedFetch={authenticatedFetch}
+                              tradingForm={tradingForm}
+                            />
                           </MKBox>
                         </>
                       )}
@@ -597,21 +654,18 @@ function Presentation() {
                         justifyContent: "center",
                       }}
                     >
-                      <MKTypography color="text">
-                        데이터가 없습니다.
-                      </MKTypography>
+                      <MKTypography color="text">데이터가 없습니다.</MKTypography>
                     </MKBox>
                   )}
                 </>
               )}
             </MKBox>
-
           </Grid>
         </Grid>
       </Box>
 
       {/* Financial Modal Component */}
-      <FinancialModal 
+      <FinancialModal
         open={openFinancialModal}
         onClose={handleCloseFinancialModal}
         selectedStock={selectedStock}
@@ -625,4 +679,4 @@ function Presentation() {
   );
 }
 
-export default Presentation; 
+export default Presentation;

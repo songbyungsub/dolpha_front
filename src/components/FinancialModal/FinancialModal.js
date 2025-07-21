@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -13,25 +13,17 @@ import {
   Paper,
   CircularProgress,
   Button,
-  IconButton
-} from '@mui/material';
-import { Close } from '@mui/icons-material';
-import MKBox from 'components/MKBox';
-import MKTypography from 'components/MKTypography';
-import { formatFinancialAmount } from 'utils/formatters';
+  IconButton,
+} from "@mui/material";
+import { Close } from "@mui/icons-material";
+import MKBox from "components/MKBox";
+import MKTypography from "components/MKTypography";
+import { formatFinancialAmount } from "utils/formatters";
 
 /**
  * 재무제표 모달 컴포넌트
  */
-const FinancialModal = ({ 
-  open, 
-  onClose, 
-  selectedStock, 
-  financialData, 
-  loading,
-  onOpen 
-}) => {
-  
+const FinancialModal = ({ open, onClose, selectedStock, financialData, loading, onOpen }) => {
   return (
     <Dialog
       open={open}
@@ -41,27 +33,26 @@ const FinancialModal = ({
       PaperProps={{
         sx: {
           borderRadius: 2,
-          bgcolor: 'background.paper'
-        }
+          bgcolor: "background.paper",
+        },
       }}
     >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        pb: 1
-      }}>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          pb: 1,
+        }}
+      >
         <MKTypography variant="h6" fontWeight="bold">
           재무제표 {selectedStock && `- ${selectedStock.name} (${selectedStock.code})`}
         </MKTypography>
-        <IconButton
-          onClick={onClose}
-          sx={{ position: 'absolute', right: 8, top: 8 }}
-        >
+        <IconButton onClick={onClose} color="default" sx={{ position: "absolute", right: 8, top: 8 }}>
           <Close />
         </IconButton>
       </DialogTitle>
-      
+
       <DialogContent sx={{ pt: 1 }}>
         {loading ? (
           <MKBox
@@ -70,7 +61,7 @@ const FinancialModal = ({
               alignItems: "center",
               justifyContent: "center",
               height: "200px",
-              flexDirection: "column"
+              flexDirection: "column",
             }}
           >
             <CircularProgress size={40} />
@@ -82,42 +73,47 @@ const FinancialModal = ({
           <>
             {/* 손익계산서 */}
             <MKBox sx={{ mb: 3 }}>
-              <MKTypography variant="h6" fontWeight="bold" sx={{ mb: 2, color: 'info' }}>
+              <MKTypography variant="h6" fontWeight="bold" sx={{ mb: 2, color: "info" }}>
                 손익계산서
               </MKTypography>
               <TableContainer component={Paper} sx={{ boxShadow: 1, mb: 2 }}>
                 <Table size="small">
                   <TableHead>
-                    <TableRow sx={{ bgcolor: 'grey.50', display: 'flex', width: '100%' }}>
-                      <TableCell sx={{ 
-                        fontWeight: 'bold', 
-                        minWidth: 120, 
-                        paddingRight: 3,
-                        flex: 2,
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}>
+                    <TableRow sx={{ bgcolor: "grey.50", display: "flex", width: "100%" }}>
+                      <TableCell
+                        sx={{
+                          fontWeight: "bold",
+                          minWidth: 120,
+                          paddingRight: 3,
+                          flex: 2,
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
                         항목
                       </TableCell>
                       {/* 최신 4개 분기를 년도-분기 순으로 내림차순 정렬 */}
-                      {[...new Set(financialData.map(item => `${item.year} ${item.quarter}`))]
+                      {[...new Set(financialData.map((item) => `${item.year} ${item.quarter}`))]
                         .sort((a, b) => {
-                          const [yearA, quarterA] = a.split(' ');
-                          const [yearB, quarterB] = b.split(' ');
+                          const [yearA, quarterA] = a.split(" ");
+                          const [yearB, quarterB] = b.split(" ");
                           if (yearA !== yearB) return yearB - yearA; // 년도 내림차순
                           // 분기 내림차순 (4Q > 3Q > 2Q > 1Q)
-                          const quarterOrder = { '4Q': 4, '3Q': 3, '2Q': 2, '1Q': 1 };
+                          const quarterOrder = { "4Q": 4, "3Q": 3, "2Q": 2, "1Q": 1 };
                           return (quarterOrder[quarterB] || 0) - (quarterOrder[quarterA] || 0);
                         })
                         .slice(0, 4)
-                        .map(period => (
-                          <TableCell key={period} sx={{ 
-                            fontWeight: 'bold', 
-                            minWidth: 100,
-                            flex: 1,
-                            textAlign: 'right',
-                            paddingRight: 2
-                          }}>
+                        .map((period) => (
+                          <TableCell
+                            key={period}
+                            sx={{
+                              fontWeight: "bold",
+                              minWidth: 100,
+                              flex: 1,
+                              textAlign: "right",
+                              paddingRight: 2,
+                            }}
+                          >
                             {period}
                           </TableCell>
                         ))}
@@ -125,52 +121,70 @@ const FinancialModal = ({
                   </TableHead>
                   <TableBody>
                     {/* 손익계산서 항목들 */}
-                    {[...new Set(financialData.filter(item => item.statement_type === '손익계산서').map(item => item.account_name))]
-                      .map(accountName => (
-                        <TableRow key={accountName} sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.25' }, display: 'flex', width: '100%' }}>
-                          <TableCell sx={{ 
-                            fontWeight: 'medium', 
-                            minWidth: 120, 
+                    {[
+                      ...new Set(
+                        financialData
+                          .filter((item) => item.statement_type === "손익계산서")
+                          .map((item) => item.account_name)
+                      ),
+                    ].map((accountName) => (
+                      <TableRow
+                        key={accountName}
+                        sx={{
+                          "&:nth-of-type(odd)": { bgcolor: "grey.25" },
+                          display: "flex",
+                          width: "100%",
+                        }}
+                      >
+                        <TableCell
+                          sx={{
+                            fontWeight: "medium",
+                            minWidth: 120,
                             paddingRight: 3,
                             flex: 2,
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            {accountName}
-                          </TableCell>
-                          {[...new Set(financialData.map(item => `${item.year} ${item.quarter}`))]
-                            .sort((a, b) => {
-                              const [yearA, quarterA] = a.split(' ');
-                              const [yearB, quarterB] = b.split(' ');
-                              if (yearA !== yearB) return yearB - yearA;
-                              // 분기 내림차순 (4Q > 3Q > 2Q > 1Q)
-                              const quarterOrder = { '4Q': 4, '3Q': 3, '2Q': 2, '1Q': 1 };
-                              return (quarterOrder[quarterB] || 0) - (quarterOrder[quarterA] || 0);
-                            })
-                            .slice(0, 4)
-                            .map(period => {
-                              const [year, quarter] = period.split(' ');
-                              const item = financialData.find(d => 
-                                d.year === year && 
-                                d.quarter === quarter && 
-                                d.account_name === accountName && 
-                                d.statement_type === '손익계산서'
-                              );
-                              return (
-                                <TableCell key={period} sx={{ 
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          {accountName}
+                        </TableCell>
+                        {[...new Set(financialData.map((item) => `${item.year} ${item.quarter}`))]
+                          .sort((a, b) => {
+                            const [yearA, quarterA] = a.split(" ");
+                            const [yearB, quarterB] = b.split(" ");
+                            if (yearA !== yearB) return yearB - yearA;
+                            // 분기 내림차순 (4Q > 3Q > 2Q > 1Q)
+                            const quarterOrder = { "4Q": 4, "3Q": 3, "2Q": 2, "1Q": 1 };
+                            return (quarterOrder[quarterB] || 0) - (quarterOrder[quarterA] || 0);
+                          })
+                          .slice(0, 4)
+                          .map((period) => {
+                            const [year, quarter] = period.split(" ");
+                            const item = financialData.find(
+                              (d) =>
+                                d.year === year &&
+                                d.quarter === quarter &&
+                                d.account_name === accountName &&
+                                d.statement_type === "손익계산서"
+                            );
+                            return (
+                              <TableCell
+                                key={period}
+                                sx={{
                                   minWidth: 100,
                                   flex: 1,
-                                  textAlign: 'right',
+                                  textAlign: "right",
                                   paddingRight: 2,
-                                  color: item && item.amount < 0 ? '#1976d2' : 'inherit',
-                                  fontWeight: item && item.amount < 0 ? 'bold' : 'normal'
-                                }}>
-                                  {item ? formatFinancialAmount(item.amount) : '-'}
-                                </TableCell>
-                              );
-                            })}
-                        </TableRow>
-                      ))}
+                                  color: item && item.amount < 0 ? "#1976d2" : "inherit",
+                                  fontWeight: item && item.amount < 0 ? "bold" : "normal",
+                                }}
+                              >
+                                {item ? formatFinancialAmount(item.amount) : "-"}
+                              </TableCell>
+                            );
+                          })}
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -178,94 +192,117 @@ const FinancialModal = ({
 
             {/* 재무상태표 */}
             <MKBox sx={{ mb: 2 }}>
-              <MKTypography variant="h6" fontWeight="bold" sx={{ mb: 2, color: 'info' }}>
+              <MKTypography variant="h6" fontWeight="bold" sx={{ mb: 2, color: "info" }}>
                 재무상태표
               </MKTypography>
               <TableContainer component={Paper} sx={{ boxShadow: 1 }}>
                 <Table size="small">
                   <TableHead>
-                    <TableRow sx={{ bgcolor: 'grey.50', display: 'flex', width: '100%' }}>
-                      <TableCell sx={{ 
-                        fontWeight: 'bold', 
-                        minWidth: 120,
-                        paddingRight: 3,
-                        flex: 2,
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}>
+                    <TableRow sx={{ bgcolor: "grey.50", display: "flex", width: "100%" }}>
+                      <TableCell
+                        sx={{
+                          fontWeight: "bold",
+                          minWidth: 120,
+                          paddingRight: 3,
+                          flex: 2,
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
                         항목
                       </TableCell>
                       {/* 최신 4개 분기를 년도-분기 순으로 내림차순 정렬 */}
-                      {[...new Set(financialData.map(item => `${item.year} ${item.quarter}`))]
+                      {[...new Set(financialData.map((item) => `${item.year} ${item.quarter}`))]
                         .sort((a, b) => {
-                          const [yearA, quarterA] = a.split(' ');
-                          const [yearB, quarterB] = b.split(' ');
+                          const [yearA, quarterA] = a.split(" ");
+                          const [yearB, quarterB] = b.split(" ");
                           if (yearA !== yearB) return yearB - yearA; // 년도 내림차순
                           // 분기 내림차순 (4Q > 3Q > 2Q > 1Q)
-                          const quarterOrder = { '4Q': 4, '3Q': 3, '2Q': 2, '1Q': 1 };
+                          const quarterOrder = { "4Q": 4, "3Q": 3, "2Q": 2, "1Q": 1 };
                           return (quarterOrder[quarterB] || 0) - (quarterOrder[quarterA] || 0);
                         })
                         .slice(0, 4)
-                        .map(period => (
-                          <TableCell key={period} sx={{ 
-                            fontWeight: 'bold', 
-                            minWidth: 100,
-                            flex: 1,
-                            textAlign: 'right',
-                            paddingRight: 2
-                          }}>
+                        .map((period) => (
+                          <TableCell
+                            key={period}
+                            sx={{
+                              fontWeight: "bold",
+                              minWidth: 100,
+                              flex: 1,
+                              textAlign: "right",
+                              paddingRight: 2,
+                            }}
+                          >
                             {period}
                           </TableCell>
                         ))}
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {[...new Set(financialData.filter(item => item.statement_type === '재무상태표').map(item => item.account_name))]
-                      .map(accountName => (
-                        <TableRow key={accountName} sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.25' }, display: 'flex', width: '100%' }}>
-                          <TableCell sx={{ 
-                            fontWeight: 'medium', 
-                            minWidth: 120, 
+                    {[
+                      ...new Set(
+                        financialData
+                          .filter((item) => item.statement_type === "재무상태표")
+                          .map((item) => item.account_name)
+                      ),
+                    ].map((accountName) => (
+                      <TableRow
+                        key={accountName}
+                        sx={{
+                          "&:nth-of-type(odd)": { bgcolor: "grey.25" },
+                          display: "flex",
+                          width: "100%",
+                        }}
+                      >
+                        <TableCell
+                          sx={{
+                            fontWeight: "medium",
+                            minWidth: 120,
                             paddingRight: 3,
                             flex: 2,
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}>
-                            {accountName}
-                          </TableCell>
-                          {[...new Set(financialData.map(item => `${item.year} ${item.quarter}`))]
-                            .sort((a, b) => {
-                              const [yearA, quarterA] = a.split(' ');
-                              const [yearB, quarterB] = b.split(' ');
-                              if (yearA !== yearB) return yearB - yearA;
-                              // 분기 내림차순 (4Q > 3Q > 2Q > 1Q)
-                              const quarterOrder = { '4Q': 4, '3Q': 3, '2Q': 2, '1Q': 1 };
-                              return (quarterOrder[quarterB] || 0) - (quarterOrder[quarterA] || 0);
-                            })
-                            .slice(0, 4)
-                            .map(period => {
-                              const [year, quarter] = period.split(' ');
-                              const item = financialData.find(d => 
-                                d.year === year && 
-                                d.quarter === quarter && 
-                                d.account_name === accountName && 
-                                d.statement_type === '재무상태표'
-                              );
-                              return (
-                                <TableCell key={period} sx={{ 
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          {accountName}
+                        </TableCell>
+                        {[...new Set(financialData.map((item) => `${item.year} ${item.quarter}`))]
+                          .sort((a, b) => {
+                            const [yearA, quarterA] = a.split(" ");
+                            const [yearB, quarterB] = b.split(" ");
+                            if (yearA !== yearB) return yearB - yearA;
+                            // 분기 내림차순 (4Q > 3Q > 2Q > 1Q)
+                            const quarterOrder = { "4Q": 4, "3Q": 3, "2Q": 2, "1Q": 1 };
+                            return (quarterOrder[quarterB] || 0) - (quarterOrder[quarterA] || 0);
+                          })
+                          .slice(0, 4)
+                          .map((period) => {
+                            const [year, quarter] = period.split(" ");
+                            const item = financialData.find(
+                              (d) =>
+                                d.year === year &&
+                                d.quarter === quarter &&
+                                d.account_name === accountName &&
+                                d.statement_type === "재무상태표"
+                            );
+                            return (
+                              <TableCell
+                                key={period}
+                                sx={{
                                   minWidth: 100,
                                   flex: 1,
-                                  textAlign: 'right',
+                                  textAlign: "right",
                                   paddingRight: 2,
-                                  color: item && item.amount < 0 ? '#1976d2' : 'inherit',
-                                  fontWeight: item && item.amount < 0 ? 'bold' : 'normal'
-                                }}>
-                                  {item ? formatFinancialAmount(item.amount) : '-'}
-                                </TableCell>
-                              );
-                            })}
-                        </TableRow>
-                      ))}
+                                  color: item && item.amount < 0 ? "#1976d2" : "inherit",
+                                  fontWeight: item && item.amount < 0 ? "bold" : "normal",
+                                }}
+                              >
+                                {item ? formatFinancialAmount(item.amount) : "-"}
+                              </TableCell>
+                            );
+                          })}
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -278,7 +315,7 @@ const FinancialModal = ({
               alignItems: "center",
               justifyContent: "center",
               height: "200px",
-              flexDirection: "column"
+              flexDirection: "column",
             }}
           >
             <MKTypography variant="h6" color="text">
@@ -289,14 +326,14 @@ const FinancialModal = ({
             </MKTypography>
           </MKBox>
         )}
-        
-        <MKBox sx={{ mt: 2, p: 1, bgcolor: 'info.light', borderRadius: 1 }}>
+
+        <MKBox sx={{ mt: 2, p: 1, bgcolor: "info.light", borderRadius: 1 }}>
           <MKTypography variant="caption" color="info">
             * 금액 단위: 원 (조/억/만 단위로 표시)
           </MKTypography>
         </MKBox>
       </DialogContent>
-      
+
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} variant="contained" color="primary">
           닫기

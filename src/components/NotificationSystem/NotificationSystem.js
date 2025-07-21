@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
+import React, { useState } from "react";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 /**
  * 알림 시스템 컴포넌트
@@ -11,13 +11,9 @@ const NotificationSystem = ({ snackbar, onClose }) => {
       open={snackbar.open}
       autoHideDuration={6000}
       onClose={onClose}
-      anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      anchorOrigin={{ vertical: "top", horizontal: "center" }}
     >
-      <Alert
-        onClose={onClose}
-        severity={snackbar.severity}
-        sx={{ width: '100%' }}
-      >
+      <Alert onClose={onClose} severity={snackbar.severity} sx={{ width: "100%" }}>
         {snackbar.message}
       </Alert>
     </Snackbar>
@@ -30,23 +26,23 @@ const NotificationSystem = ({ snackbar, onClose }) => {
 export const useNotification = () => {
   const [snackbar, setSnackbar] = useState({
     open: false,
-    message: '',
-    severity: 'info' // 'success', 'error', 'warning', 'info'
+    message: "",
+    severity: "info", // 'success', 'error', 'warning', 'info'
   });
 
-  const showSnackbar = (message, severity = 'info') => {
+  const showSnackbar = (message, severity = "info") => {
     setSnackbar({
       open: true,
       message,
-      severity
+      severity,
     });
   };
 
   const handleSnackbarClose = (_, reason) => {
-    if (reason === 'clickaway') {
+    if (reason === "clickaway") {
       return;
     }
-    setSnackbar(prev => ({ ...prev, open: false }));
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
   return {
@@ -54,11 +50,8 @@ export const useNotification = () => {
     showSnackbar,
     handleSnackbarClose,
     NotificationComponent: () => (
-      <NotificationSystem 
-        snackbar={snackbar} 
-        onClose={handleSnackbarClose} 
-      />
-    )
+      <NotificationSystem snackbar={snackbar} onClose={handleSnackbarClose} />
+    ),
   };
 };
 
