@@ -5,7 +5,70 @@ import MKBox from "components/MKBox";
 import MKTypography from "components/MKTypography";
 import { formatNumber } from "utils/formatters";
 
-function StockList({ stockData, selectedStock, onStockClick }) {
+function StockList({ stocks, loading, error, selectedStock, onStockClick }) {
+  // 로딩 상태
+  if (loading) {
+    return (
+      <MKBox
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+          p: 4,
+        }}
+      >
+        <MKTypography variant="body2" color="text">
+          종목 데이터를 불러오는 중...
+        </MKTypography>
+      </MKBox>
+    );
+  }
+
+  // 오류 상태
+  if (error) {
+    return (
+      <MKBox
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+          p: 4,
+          textAlign: "center",
+        }}
+      >
+        <MKBox>
+          <MKTypography variant="body2" color="error" sx={{ mb: 1 }}>
+            데이터 로드 중 오류가 발생했습니다
+          </MKTypography>
+          <MKTypography variant="caption" color="text">
+            {error}
+          </MKTypography>
+        </MKBox>
+      </MKBox>
+    );
+  }
+
+  // 데이터가 없는 상태
+  if (!stocks || !Array.isArray(stocks) || stocks.length === 0) {
+    return (
+      <MKBox
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+          p: 4,
+        }}
+      >
+        <MKTypography variant="body2" color="text">
+          표시할 종목이 없습니다
+        </MKTypography>
+      </MKBox>
+    );
+  }
+
   return (
     <>
       {/* 테이블 헤더 */}
@@ -65,13 +128,13 @@ function StockList({ stockData, selectedStock, onStockClick }) {
           },
         }}
       >
-        {stockData.map((row, rowIndex) => (
+        {stocks.map((row, rowIndex) => (
           <MKBox
             key={row.code || rowIndex}
             onClick={() => onStockClick(row)}
             sx={{
               p: 0.5,
-              borderBottom: rowIndex === stockData.length - 1 ? "none" : "1px solid #f0f0f0",
+              borderBottom: rowIndex === stocks.length - 1 ? "none" : "1px solid #f0f0f0",
               cursor: "pointer",
               transition: "all 0.2s ease",
               backgroundColor:

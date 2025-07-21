@@ -24,23 +24,23 @@ import MKButtonRoot from "components/MKButton/MKButtonRoot";
 const MKButton = forwardRef(
   ({ color, variant, size, circular, iconOnly, children, ...rest }, ref) => {
     // Debug logging to catch problematic props
-    if (typeof color !== 'string' && color !== undefined) {
-      console.warn('MKButton received non-string color:', color, typeof color);
+    if (typeof color !== "string" && color !== undefined) {
+      console.warn("MKButton received non-string color:", color, typeof color);
     }
-    if (typeof variant !== 'string' && variant !== undefined) {
-      console.warn('MKButton received non-string variant:', variant, typeof variant);
+    if (typeof variant !== "string" && variant !== undefined) {
+      console.warn("MKButton received non-string variant:", variant, typeof variant);
     }
-    if (typeof size !== 'string' && size !== undefined) {
-      console.warn('MKButton received non-string size:', size, typeof size);
+    if (typeof size !== "string" && size !== undefined) {
+      console.warn("MKButton received non-string size:", size, typeof size);
     }
 
     // Convert custom colors to valid MUI Button colors
     const getMuiColor = (customColor) => {
       // Handle undefined, null, or empty string
-      if (!customColor || typeof customColor !== 'string') {
+      if (!customColor || typeof customColor !== "string") {
         return "default";
       }
-      
+
       switch (customColor) {
         case "white":
         case "light":
@@ -63,8 +63,8 @@ const MKButton = forwardRef(
         {...rest}
         ref={ref}
         color={getMuiColor(color)}
-        variant={variant === "gradient" ? "contained" : (variant || "contained")}
-        size={typeof size === 'string' ? size : "medium"}
+        variant={variant === "gradient" ? "contained" : variant || "contained"}
+        size={typeof size === "string" ? size : "medium"}
         ownerState={{ color, variant, size, circular, iconOnly }}
       >
         {children}

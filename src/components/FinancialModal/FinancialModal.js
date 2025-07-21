@@ -48,7 +48,11 @@ const FinancialModal = ({ open, onClose, selectedStock, financialData, loading, 
         <MKTypography variant="h6" fontWeight="bold">
           재무제표 {selectedStock && `- ${selectedStock.name} (${selectedStock.code})`}
         </MKTypography>
-        <IconButton onClick={onClose} color="default" sx={{ position: "absolute", right: 8, top: 8 }}>
+        <IconButton
+          onClick={onClose}
+          color="default"
+          sx={{ position: "absolute", right: 8, top: 8 }}
+        >
           <Close />
         </IconButton>
       </DialogTitle>

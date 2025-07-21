@@ -377,7 +377,7 @@ const AutotradingAccordion = ({
 
                   {/* 1차 진입시점과 포지션 */}
                   <Grid container spacing={{ xs: 2, sm: 1 }} sx={{ mb: 1 }}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={6}>
                       <TextField
                         label="1차 진입시점 (원)"
                         value={entryPoint}
@@ -401,7 +401,7 @@ const AutotradingAccordion = ({
                         }}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={6}>
                       <TextField
                         label="1차 포지션 (%)"
                         value={positions[0] || ""}
@@ -801,7 +801,7 @@ const AutotradingAccordion = ({
 
                       {/* 1차 진입시점과 포지션 */}
                       <Grid container spacing={{ xs: 2, sm: 1 }} sx={{ mb: 1 }}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={6}>
                           <TextField
                             label="1차 진입시점 (원)"
                             value={entryPoint}
@@ -825,7 +825,7 @@ const AutotradingAccordion = ({
                             }}
                           />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={6}>
                           <TextField
                             label="1차 포지션 (%)"
                             value={positions[0] || ""}
@@ -851,7 +851,7 @@ const AutotradingAccordion = ({
                       {pyramidingCount > 0 &&
                         pyramidingEntries.map((entry, index) => (
                           <Grid container spacing={1} key={index} sx={{ mb: 1 }}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid item xs={6}>
                               <TextField
                                 label={`${index + 2}차 진입시점 (%)`}
                                 value={entry}
@@ -871,7 +871,7 @@ const AutotradingAccordion = ({
                                 }}
                               />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid item xs={6}>
                               <TextField
                                 label={`${index + 2}차 포지션 (%)`}
                                 value={positions[index + 1] || ""}
@@ -1296,7 +1296,7 @@ const AutotradingAccordion = ({
 
                     {/* 1차 진입시점과 포지션 */}
                     <Grid container spacing={{ xs: 2, sm: 1 }} sx={{ mb: 1 }}>
-                      <Grid item xs={12} sm={6}>
+                      <Grid item xs={6}>
                         <TextField
                           label="1차 진입시점 (원)"
                           value={entryPoint}
@@ -1320,7 +1320,7 @@ const AutotradingAccordion = ({
                           }}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid item xs={6}>
                         <TextField
                           label="1차 포지션 (%)"
                           value={positions[0] || ""}
@@ -1346,7 +1346,7 @@ const AutotradingAccordion = ({
                     {pyramidingCount > 0 &&
                       pyramidingEntries.map((entry, index) => (
                         <Grid container spacing={1} key={index} sx={{ mb: 1 }}>
-                          <Grid item xs={12} sm={6}>
+                          <Grid item xs={6}>
                             <TextField
                               label={`${index + 2}차 진입시점 (%)`}
                               value={entry}
@@ -1366,7 +1366,7 @@ const AutotradingAccordion = ({
                               }}
                             />
                           </Grid>
-                          <Grid item xs={12} sm={6}>
+                          <Grid item xs={6}>
                             <TextField
                               label={`${index + 2}차 포지션 (%)`}
                               value={positions[index + 1] || ""}

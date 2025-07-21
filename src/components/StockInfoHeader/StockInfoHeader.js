@@ -19,146 +19,216 @@ function StockInfoHeader({ selectedStock, ohlcvData, analysisData, onOpenFinanci
 
   return (
     <MKBox
-      p={1.5}
       sx={{
         background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        borderRadius: 1,
+        borderRadius: { xs: 2, md: 1 },
         boxShadow: "0 2px 8px rgba(102, 126, 234, 0.1)",
         position: "relative",
+        p: { xs: 1.5, md: 1.5 },
+        mb: 2,
       }}
     >
-      <Grid container spacing={1} alignItems="center">
-        {/* 종목명 & 코드 */}
-        <Grid item xs={12} sm={3}>
+      {/* 모바일: 간단한 카드 형태 */}
+      <MKBox sx={{ display: { xs: "block", md: "none" } }}>
+        <MKBox
+          sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}
+        >
           <MKBox>
-            <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
-              종목명
+            <MKTypography variant="h6" color="white" fontWeight="bold">
+              {selectedStock.name || "-"}
             </MKTypography>
-            <MKBox sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <MKTypography
-                variant="body2"
-                fontWeight="bold"
-                color="white"
-                sx={{ fontSize: "0.85rem", lineHeight: 1.2 }}
-              >
-                {selectedStock.name || "-"}
-              </MKTypography>
-              <MKTypography variant="caption" color="white" sx={{ fontSize: "0.65rem" }}>
-                ({selectedStock.code || "-"})
-              </MKTypography>
-            </MKBox>
-          </MKBox>
-        </Grid>
-
-        {/* 마켓 정보 */}
-        <Grid item xs={12} sm={1.5}>
-          <MKBox>
-            <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
-              마켓
-            </MKTypography>
-            <MKTypography
-              variant="body2"
-              fontWeight="bold"
-              color="white"
-              sx={{ fontSize: "0.85rem" }}
-            >
-              KOSPI
+            <MKTypography variant="caption" color="white" sx={{ opacity: 0.9 }}>
+              {selectedStock.code || "-"} • KOSPI
             </MKTypography>
           </MKBox>
-        </Grid>
+          <IconButton
+            onClick={() => onOpenFinancialModal(selectedStock)}
+            sx={{
+              color: "white",
+              padding: "8px",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+              },
+            }}
+            title="재무제표 보기"
+          >
+            <Assessment sx={{ fontSize: "20px" }} />
+          </IconButton>
+        </MKBox>
 
-        {/* 종가 */}
-        <Grid item xs={12} sm={2.5}>
+        <MKBox sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <MKBox>
-            <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
-              종가
-            </MKTypography>
-            <MKTypography
-              variant="body2"
-              fontWeight="bold"
-              color="white"
-              sx={{ fontSize: "0.85rem" }}
-            >
+            <MKTypography variant="h5" color="white" fontWeight="bold">
               {ohlcvData.length > 0
                 ? new Intl.NumberFormat("ko-KR").format(ohlcvData[ohlcvData.length - 1]?.close)
                 : "-"}
             </MKTypography>
-          </MKBox>
-        </Grid>
-
-        {/* 등락율 */}
-        <Grid item xs={12} sm={2.5}>
-          <MKBox>
-            <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
-              등락율
+            <MKTypography variant="caption" color="white" sx={{ opacity: 0.9 }}>
+              종가
             </MKTypography>
-            <MKBox sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          </MKBox>
+
+          <MKBox sx={{ textAlign: "right" }}>
+            <MKBox
+              sx={{ display: "flex", alignItems: "center", gap: 0.5, justifyContent: "flex-end" }}
+            >
               {changeRate !== null &&
                 (changeRate >= 0 ? (
-                  <ArrowUpward sx={{ fontSize: "14px", color: "white" }} />
+                  <ArrowUpward sx={{ fontSize: "16px", color: "white" }} />
                 ) : (
-                  <ArrowDownward sx={{ fontSize: "14px", color: "white" }} />
+                  <ArrowDownward sx={{ fontSize: "16px", color: "white" }} />
                 ))}
+              <MKTypography variant="body1" color="white" fontWeight="bold">
+                {changeRate !== null
+                  ? `${changeRate >= 0 ? "+" : ""}${changeRate.toFixed(2)}%`
+                  : "-"}
+              </MKTypography>
+            </MKBox>
+            <MKTypography variant="caption" color="white" sx={{ opacity: 0.9 }}>
+              ATR:{" "}
+              {analysisData.length > 0 && analysisData[analysisData.length - 1]?.atr
+                ? analysisData[analysisData.length - 1].atr.toFixed(1)
+                : "-"}
+            </MKTypography>
+          </MKBox>
+        </MKBox>
+      </MKBox>
+
+      {/* 데스크탑: 기존 Grid 레이아웃 */}
+      <MKBox sx={{ display: { xs: "none", md: "block" } }}>
+        <Grid container spacing={1} alignItems="center">
+          {/* 종목명 & 코드 */}
+          <Grid item xs={12} sm={3}>
+            <MKBox>
+              <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
+                종목명
+              </MKTypography>
+              <MKBox sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <MKTypography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="white"
+                  sx={{ fontSize: "0.85rem", lineHeight: 1.2 }}
+                >
+                  {selectedStock.name || "-"}
+                </MKTypography>
+                <MKTypography variant="caption" color="white" sx={{ fontSize: "0.65rem" }}>
+                  ({selectedStock.code || "-"})
+                </MKTypography>
+              </MKBox>
+            </MKBox>
+          </Grid>
+
+          {/* 마켓 정보 */}
+          <Grid item xs={12} sm={1.5}>
+            <MKBox>
+              <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
+                마켓
+              </MKTypography>
               <MKTypography
                 variant="body2"
                 fontWeight="bold"
                 color="white"
                 sx={{ fontSize: "0.85rem" }}
               >
-                {changeRate !== null
-                  ? `${changeRate >= 0 ? "+" : ""}${changeRate.toFixed(2)}%`
+                KOSPI
+              </MKTypography>
+            </MKBox>
+          </Grid>
+
+          {/* 종가 */}
+          <Grid item xs={12} sm={2.5}>
+            <MKBox>
+              <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
+                종가
+              </MKTypography>
+              <MKTypography
+                variant="body2"
+                fontWeight="bold"
+                color="white"
+                sx={{ fontSize: "0.85rem" }}
+              >
+                {ohlcvData.length > 0
+                  ? new Intl.NumberFormat("ko-KR").format(ohlcvData[ohlcvData.length - 1]?.close)
                   : "-"}
               </MKTypography>
             </MKBox>
-          </MKBox>
-        </Grid>
+          </Grid>
 
-        {/* ATR */}
-        <Grid item xs={12} sm={2}>
-          <MKBox>
-            <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
-              ATR
-            </MKTypography>
-            <MKTypography
-              variant="body2"
-              fontWeight="bold"
-              color="white"
-              sx={{ fontSize: "0.85rem" }}
-            >
-              {analysisData.length > 0 && analysisData[analysisData.length - 1]?.atr
-                ? analysisData[analysisData.length - 1].atr.toFixed(1)
-                : "-"}
-            </MKTypography>
-          </MKBox>
-        </Grid>
+          {/* 등락율 */}
+          <Grid item xs={12} sm={2.5}>
+            <MKBox>
+              <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
+                등락율
+              </MKTypography>
+              <MKBox sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                {changeRate !== null &&
+                  (changeRate >= 0 ? (
+                    <ArrowUpward sx={{ fontSize: "14px", color: "white" }} />
+                  ) : (
+                    <ArrowDownward sx={{ fontSize: "14px", color: "white" }} />
+                  ))}
+                <MKTypography
+                  variant="body2"
+                  fontWeight="bold"
+                  color="white"
+                  sx={{ fontSize: "0.85rem" }}
+                >
+                  {changeRate !== null
+                    ? `${changeRate >= 0 ? "+" : ""}${changeRate.toFixed(2)}%`
+                    : "-"}
+                </MKTypography>
+              </MKBox>
+            </MKBox>
+          </Grid>
 
-        {/* 재무제표 버튼 */}
-        <Grid item xs={12} sm={0.5}>
-          <MKBox
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              height: "100%",
-              justifyContent: "center",
-            }}
-          >
-            <IconButton
-              onClick={() => onOpenFinancialModal(selectedStock)}
+          {/* ATR */}
+          <Grid item xs={12} sm={2}>
+            <MKBox>
+              <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
+                ATR
+              </MKTypography>
+              <MKTypography
+                variant="body2"
+                fontWeight="bold"
+                color="white"
+                sx={{ fontSize: "0.85rem" }}
+              >
+                {analysisData.length > 0 && analysisData[analysisData.length - 1]?.atr
+                  ? analysisData[analysisData.length - 1].atr.toFixed(1)
+                  : "-"}
+              </MKTypography>
+            </MKBox>
+          </Grid>
+
+          {/* 재무제표 버튼 */}
+          <Grid item xs={12} sm={0.5}>
+            <MKBox
               sx={{
-                color: "white",
-                padding: "2px",
-                "&:hover": {
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                },
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                height: "100%",
+                justifyContent: "center",
               }}
-              title="재무제표 보기"
             >
-              <Assessment sx={{ fontSize: "18px" }} />
-            </IconButton>
-          </MKBox>
+              <IconButton
+                onClick={() => onOpenFinancialModal(selectedStock)}
+                sx={{
+                  color: "white",
+                  padding: "2px",
+                  "&:hover": {
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                  },
+                }}
+                title="재무제표 보기"
+              >
+                <Assessment sx={{ fontSize: "18px" }} />
+              </IconButton>
+            </MKBox>
+          </Grid>
         </Grid>
-      </Grid>
+      </MKBox>
     </MKBox>
   );
 }
