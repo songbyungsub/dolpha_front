@@ -16,7 +16,7 @@ export const useFinancialData = () => {
       setFinancialLoading(true);
       const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
       const response = await fetch(
-        `${apiBaseUrl}/api/find_stock_financial?code=${stockCode}&limit=50`
+        `${apiBaseUrl}/api/find_stock_financial?code=${stockCode}&limit=85`
       );
       if (!response.ok) {
         throw new Error("재무제표 데이터를 가져올 수 없습니다");
