@@ -475,6 +475,64 @@ const ChartContainer = ({
     return { datasets };
   };
 
+  const createATRData = (analysisData) => {
+    if (!analysisData || analysisData.length === 0) return null;
+
+    const datasets = [];
+
+    // ATR 데이터 (막대그래프)
+    const atrData = analysisData
+      .filter((item) => item.atr !== null && item.atr !== undefined && !isNaN(item.atr))
+      .map((item, index) => ({
+        x: index,
+        y: item.atr,
+      }));
+
+    if (atrData.length > 0) {
+      datasets.push({
+        label: "ATR",
+        type: "bar",
+        data: atrData,
+        borderColor: "#ff5722",
+        backgroundColor: "rgba(255, 87, 34, 0.6)",
+        borderWidth: 1,
+        yAxisID: 'y',
+        order: 1, // 막대를 뒤쪽에 표시
+      });
+    }
+
+    // ATR Ratio 데이터 (라인그래프)
+    const atrRatioData = analysisData
+      .filter((item) => item.atrRatio !== null && item.atrRatio !== undefined && !isNaN(item.atrRatio))
+      .map((item, index) => ({
+        x: index,
+        y: item.atrRatio * 100, // 백분율로 표시
+      }));
+
+    if (atrRatioData.length > 0) {
+      datasets.push({
+        label: "ATR Ratio (%)",
+        type: "line",
+        data: atrRatioData,
+        borderColor: "#795548",
+        backgroundColor: "transparent",
+        borderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 8,
+        pointBackgroundColor: "#795548",
+        pointBorderColor: "white",
+        pointBorderWidth: 2,
+        tension: 0.1,
+        yAxisID: 'y1',
+        order: 0, // 라인을 가장 앞에 표시
+        fill: false,
+        showLine: true,
+      });
+    }
+
+    return { datasets };
+  };
+
   // Event handlers for horizontal lines
   const handleAddHorizontalLine = (yValue) => {
     const newLine = {
@@ -724,6 +782,7 @@ const ChartContainer = ({
   const volumeData = createVolumeData(ohlcvData);
   const indexChartData = createIndexCandlestickData(indexOhlcvData);
   const rsRankData = createRSRankData(analysisData);
+  const atrData = createATRData(analysisData);
 
   // Chart options
   const chartOptions = {
@@ -1124,6 +1183,154 @@ const ChartContainer = ({
           },
           label: function (context) {
             return `RS Rank: ${context.parsed.y}`;
+          },
+        },
+      },
+    },
+  };
+
+  const atrOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    animation: {
+      duration: 300,
+    },
+    layout: {
+      padding: {
+        top: 5,
+        bottom: 5,
+        left: 10,
+        right: 10,
+      },
+    },
+    scales: {
+      x: {
+        type: "category",
+        labels: analysisData.map((item) =>
+          new Date(item.date).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })
+        ),
+        grid: {
+          display: true,
+          color: "rgba(0,0,0,0.05)",
+        },
+        ticks: {
+          autoSkip: true,
+          autoSkipPadding: 10,
+          maxTicksLimit: 8,
+          color: "#666",
+          font: {
+            size: 10,
+          },
+          maxRotation: 0,
+          minRotation: 0,
+          padding: 5,
+        },
+      },
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        beginAtZero: true,
+        grid: {
+          color: "rgba(0,0,0,0.05)",
+        },
+        ticks: {
+          color: "#666",
+          font: {
+            size: 10,
+          },
+          padding: 8,
+          callback: function (value) {
+            return new Intl.NumberFormat("ko-KR").format(value);
+          },
+        },
+        title: {
+          display: true,
+          text: 'ATR',
+          color: '#ff5722',
+          font: {
+            size: 12,
+            weight: 'bold',
+          },
+        },
+      },
+      y1: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        beginAtZero: true,
+        grid: {
+          drawOnChartArea: false,
+        },
+        ticks: {
+          color: "#666",
+          font: {
+            size: 10,
+          },
+          padding: 8,
+          callback: function (value) {
+            return value.toFixed(1) + '%';
+          },
+        },
+        title: {
+          display: true,
+          text: 'ATR Ratio (%)',
+          color: '#795548',
+          font: {
+            size: 12,
+            weight: 'bold',
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 15,
+          font: {
+            size: 11,
+          },
+          generateLabels: function(chart) {
+            const datasets = chart.data.datasets;
+            return datasets.map((dataset, i) => ({
+              text: dataset.label,
+              fillStyle: dataset.backgroundColor,
+              strokeStyle: dataset.borderColor,
+              lineWidth: dataset.borderWidth,
+              pointStyle: dataset.type === 'line' ? 'line' : 'rect',
+              hidden: !chart.isDatasetVisible(i),
+              datasetIndex: i
+            }));
+          }
+        },
+      },
+      tooltip: {
+        mode: "index",
+        intersect: false,
+        callbacks: {
+          title: function (context) {
+            const index = context[0].dataIndex;
+            if (analysisData[index]) {
+              return new Date(analysisData[index].date).toLocaleDateString("ko-KR");
+            }
+            return "";
+          },
+          label: function (context) {
+            const label = context.dataset.label;
+            const value = context.parsed.y;
+            if (label === 'ATR') {
+              return `ATR: ${new Intl.NumberFormat("ko-KR").format(value)}`;
+            } else if (label === 'ATR Ratio (%)') {
+              return `ATR Ratio: ${value.toFixed(2)}%`;
+            }
+            return `${label}: ${value}`;
           },
         },
       },
@@ -1597,6 +1804,7 @@ const ChartContainer = ({
                   border: "1px solid #e0e0e0",
                   borderRadius: 1,
                   p: 0.5,
+                  mb: 1,
                 }}
               >
                 {rsRankData ? (
@@ -1615,6 +1823,38 @@ const ChartContainer = ({
                     }}
                   >
                     <MKTypography variant="body1">RS Rank 데이터를 로드하는 중...</MKTypography>
+                  </MKBox>
+                )}
+              </MKBox>
+            )}
+
+            {/* ATR chart */}
+            {analysisData.length > 0 && (
+              <MKBox
+                sx={{
+                  height: { xs: "200px", md: "250px" },
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: 1,
+                  p: 0.5,
+                }}
+              >
+                {atrData ? (
+                  <MKBox sx={{ height: "100%" }}>
+                    <Chart data={atrData} options={atrOptions} />
+                  </MKBox>
+                ) : (
+                  <MKBox
+                    sx={{
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "column",
+                      color: "#666",
+                    }}
+                  >
+                    <MKTypography variant="body1">ATR 데이터를 로드하는 중...</MKTypography>
                   </MKBox>
                 )}
               </MKBox>
