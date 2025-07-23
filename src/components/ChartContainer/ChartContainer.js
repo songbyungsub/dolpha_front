@@ -345,6 +345,8 @@ const ChartContainer = ({
         borderWidth: 2,
         pointRadius: 2,
         pointHoverRadius: 4,
+        pointBackgroundColor: "white",
+        pointBorderColor: "#f44336",
         tension: 0.1,
       });
     }
@@ -369,6 +371,8 @@ const ChartContainer = ({
         borderWidth: 2,
         pointRadius: 2,
         pointHoverRadius: 4,
+        pointBackgroundColor: "white",
+        pointBorderColor: "#4caf50",
         tension: 0.1,
       });
     }
@@ -393,6 +397,8 @@ const ChartContainer = ({
         borderWidth: 2,
         pointRadius: 2,
         pointHoverRadius: 4,
+        pointBackgroundColor: "white",
+        pointBorderColor: "#2196f3",
         tension: 0.1,
       });
     }
@@ -417,6 +423,8 @@ const ChartContainer = ({
         borderWidth: 2,
         pointRadius: 2,
         pointHoverRadius: 4,
+        pointBackgroundColor: "white",
+        pointBorderColor: "#9c27b0",
         tension: 0.1,
       });
     }
@@ -441,6 +449,8 @@ const ChartContainer = ({
         borderWidth: 2,
         pointRadius: 2,
         pointHoverRadius: 4,
+        pointBackgroundColor: "white",
+        pointBorderColor: "#000000",
         tension: 0.1,
       });
     }
@@ -851,11 +861,14 @@ const ChartContainer = ({
             const datasetLabel = context.dataset.label;
             if (datasetLabel === "캔들스틱") {
               const data = context.raw;
+              const changePercent = (((data.c - data.o) / data.o) * 100).toFixed(2);
+              const changePercentText = `등락율: ${changePercent > 0 ? "+" : ""}${changePercent}%`;
               return [
                 `시가: ${new Intl.NumberFormat("ko-KR").format(data.o)}`,
                 `고가: ${new Intl.NumberFormat("ko-KR").format(data.h)}`,
                 `저가: ${new Intl.NumberFormat("ko-KR").format(data.l)}`,
                 `종가: ${new Intl.NumberFormat("ko-KR").format(data.c)}`,
+                changePercentText,
               ];
             }
             return `${datasetLabel}: ${new Intl.NumberFormat("ko-KR").format(context.parsed.y)}`;
@@ -874,7 +887,7 @@ const ChartContainer = ({
     layout: {
       padding: {
         top: 5,
-        bottom: 5,
+        bottom: 0,
         left: 10,
         right: 10,
       },
@@ -899,7 +912,7 @@ const ChartContainer = ({
           },
           maxRotation: 0,
           minRotation: 0,
-          padding: 5,
+          padding: 0,
         },
       },
       y: {
@@ -941,11 +954,14 @@ const ChartContainer = ({
           },
           label: function (context) {
             const data = context.raw;
+            const changePercent = (((data.c - data.o) / data.o) * 100).toFixed(2);
+            const changePercentText = `등락율: ${changePercent > 0 ? "+" : ""}${changePercent}%`;
             return [
               `시가: ${new Intl.NumberFormat("ko-KR").format(data.o)}`,
               `고가: ${new Intl.NumberFormat("ko-KR").format(data.h)}`,
               `저가: ${new Intl.NumberFormat("ko-KR").format(data.l)}`,
               `종가: ${new Intl.NumberFormat("ko-KR").format(data.c)}`,
+              changePercentText,
             ];
           },
         },
@@ -1093,7 +1109,7 @@ const ChartContainer = ({
     },
     plugins: {
       legend: {
-        display: false,
+        display: true,
       },
       tooltip: {
         mode: "nearest",
@@ -1477,7 +1493,7 @@ const ChartContainer = ({
             {/* Volume chart */}
             <MKBox
               sx={{
-                height: { xs: "80px", md: "100px" },
+                height: { xs: "140px", md: "175px" },
                 backgroundColor: "#ffffff",
                 border: "1px solid #e0e0e0",
                 borderRadius: 1,
@@ -1492,7 +1508,7 @@ const ChartContainer = ({
             {indexData.length > 0 && (
               <MKBox
                 sx={{
-                  height: { xs: "200px", md: "250px" },
+                  height: { xs: "280px", md: "350px" },
                   backgroundColor: "#ffffff",
                   border: "1px solid #e0e0e0",
                   borderRadius: 1,

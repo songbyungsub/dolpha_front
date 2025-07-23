@@ -454,6 +454,9 @@ function DefaultNavbar({ brand, routes, transparent, light, action, sticky, rela
   return (
     <Container sx={sticky ? { position: "sticky", top: 0, zIndex: 10 } : null}>
       <MKBox
+        component="nav"
+        role="navigation"
+        aria-label="Main navigation"
         py={{ xs: 0.5, md: 1 }}
         px={{ xs: 2, sm: transparent ? 2 : 3, lg: transparent ? 0 : 2 }}
         my={relative ? 0 : { xs: 1, md: 2 }}
@@ -540,6 +543,9 @@ function DefaultNavbar({ brand, routes, transparent, light, action, sticky, rela
               ))}
           </MKBox>
           <MKBox
+            component="button"
+            aria-label={mobileNavbar ? "Close mobile menu" : "Open mobile menu"}
+            aria-expanded={mobileNavbar}
             display={{ xs: "inline-block", lg: "none" }}
             lineHeight={0}
             py={{ xs: 1, md: 1.5 }}
@@ -553,8 +559,14 @@ function DefaultNavbar({ brand, routes, transparent, light, action, sticky, rela
               alignItems: "center",
               justifyContent: "center",
               borderRadius: 1,
+              border: "none",
+              background: "transparent",
               "&:hover": {
                 backgroundColor: "rgba(255, 255, 255, 0.1)",
+              },
+              "&:focus": {
+                outline: "2px solid #fff",
+                outlineOffset: "2px",
               },
             }}
             onClick={openMobileNavbar}

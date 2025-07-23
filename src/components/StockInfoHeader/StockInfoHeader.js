@@ -86,8 +86,13 @@ function StockInfoHeader({ selectedStock, ohlcvData, analysisData, onOpenFinanci
             </MKBox>
             <MKTypography variant="caption" color="white" sx={{ opacity: 0.9 }}>
               ATR:{" "}
-              {analysisData.length > 0 && analysisData[analysisData.length - 1]?.atr
-                ? analysisData[analysisData.length - 1].atr.toFixed(1)
+              {analysisData.length > 0 && analysisData[analysisData.length - 1]?.atr && ohlcvData.length > 0
+                ? (() => {
+                    const atr = analysisData[analysisData.length - 1].atr;
+                    const currentPrice = ohlcvData[ohlcvData.length - 1]?.close;
+                    const atrPercent = currentPrice ? ((atr / currentPrice) * 100).toFixed(1) : null;
+                    return `${atr.toFixed(1)}${atrPercent ? ` (${atrPercent}%)` : ""}`;
+                  })()
                 : "-"}
             </MKTypography>
           </MKBox>
@@ -98,7 +103,7 @@ function StockInfoHeader({ selectedStock, ohlcvData, analysisData, onOpenFinanci
       <MKBox sx={{ display: { xs: "none", md: "block" } }}>
         <Grid container spacing={1} alignItems="center">
           {/* 종목명 & 코드 */}
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={2.28}>
             <MKBox>
               <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
                 종목명
@@ -120,7 +125,7 @@ function StockInfoHeader({ selectedStock, ohlcvData, analysisData, onOpenFinanci
           </Grid>
 
           {/* 마켓 정보 */}
-          <Grid item xs={12} sm={1.5}>
+          <Grid item xs={12} sm={2.28}>
             <MKBox>
               <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
                 마켓
@@ -137,7 +142,7 @@ function StockInfoHeader({ selectedStock, ohlcvData, analysisData, onOpenFinanci
           </Grid>
 
           {/* 종가 */}
-          <Grid item xs={12} sm={2.5}>
+          <Grid item xs={12} sm={2.28}>
             <MKBox>
               <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
                 종가
@@ -156,7 +161,7 @@ function StockInfoHeader({ selectedStock, ohlcvData, analysisData, onOpenFinanci
           </Grid>
 
           {/* 등락율 */}
-          <Grid item xs={12} sm={2.5}>
+          <Grid item xs={12} sm={2.28}>
             <MKBox>
               <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
                 등락율
@@ -183,7 +188,7 @@ function StockInfoHeader({ selectedStock, ohlcvData, analysisData, onOpenFinanci
           </Grid>
 
           {/* ATR */}
-          <Grid item xs={12} sm={2}>
+          <Grid item xs={12} sm={2.28}>
             <MKBox>
               <MKTypography variant="caption" color="white" sx={{ fontSize: "0.7rem" }}>
                 ATR
@@ -194,15 +199,20 @@ function StockInfoHeader({ selectedStock, ohlcvData, analysisData, onOpenFinanci
                 color="white"
                 sx={{ fontSize: "0.85rem" }}
               >
-                {analysisData.length > 0 && analysisData[analysisData.length - 1]?.atr
-                  ? analysisData[analysisData.length - 1].atr.toFixed(1)
+                {analysisData.length > 0 && analysisData[analysisData.length - 1]?.atr && ohlcvData.length > 0
+                  ? (() => {
+                      const atr = analysisData[analysisData.length - 1].atr;
+                      const currentPrice = ohlcvData[ohlcvData.length - 1]?.close;
+                      const atrPercent = currentPrice ? ((atr / currentPrice) * 100).toFixed(1) : null;
+                      return `${atr.toFixed(1)}${atrPercent ? ` (${atrPercent}%)` : ""}`;
+                    })()
                   : "-"}
               </MKTypography>
             </MKBox>
           </Grid>
 
           {/* 재무제표 버튼 */}
-          <Grid item xs={12} sm={0.5}>
+          <Grid item xs={12} sm={0.6}>
             <MKBox
               sx={{
                 display: "flex",
