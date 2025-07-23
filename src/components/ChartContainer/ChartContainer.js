@@ -106,6 +106,23 @@ const ChartContainer = ({
     };
   }, [isDragging, dragLineId]);
 
+  // Prevent body scroll during drag
+  useEffect(() => {
+    if (isDragging) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [isDragging]);
+
   // Candlestick color dynamic application
   useEffect(() => {
     if (chartRef.current && ohlcvData.length > 0) {
@@ -598,16 +615,18 @@ const ChartContainer = ({
     event.preventDefault();
     event.stopPropagation();
 
-    if (selectedLineId === lineId) {
-      setShowEntryPopup(!showEntryPopup);
-    } else {
-      setSelectedLineId(lineId);
-      setShowEntryPopup(true);
+    if (selectedLineId === lineId && showEntryPopup) {
+      // 이미 선택된 라인이고 팝업이 열려있으면 팝업 유지
+      return;
     }
+    
+    setSelectedLineId(lineId);
+    setShowEntryPopup(true);
   };
 
   const handleLabelMouseDown = (lineId, event) => {
     event.preventDefault();
+    event.stopPropagation();
 
     const handleMouseMove = () => {
       dragStateRef.current = {
@@ -620,7 +639,7 @@ const ChartContainer = ({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
 
-      document.addEventListener("mousemove", handleGlobalMouseMove);
+      document.addEventListener("mousemove", handleGlobalMouseMove, { passive: false });
       document.addEventListener("mouseup", handleGlobalMouseUp);
     };
 
@@ -637,7 +656,51 @@ const ChartContainer = ({
     document.addEventListener("mouseup", handleMouseUp);
   };
 
+  const handleLabelTouchStart = (lineId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const touch = event.touches[0];
+    const startY = touch.clientY;
+    let hasMoved = false;
+
+    const handleTouchMove = (e) => {
+      const currentTouch = e.touches[0];
+      const deltaY = Math.abs(currentTouch.clientY - startY);
+      
+      if (deltaY > 5 && !hasMoved) {
+        hasMoved = true;
+        dragStateRef.current = {
+          isDragging: true,
+          dragLineId: lineId,
+        };
+        setIsDragging(true);
+        setDragLineId(lineId);
+
+        document.removeEventListener("touchmove", handleTouchMove);
+        document.removeEventListener("touchend", handleTouchEnd);
+
+        document.addEventListener("touchmove", handleGlobalTouchMove, { passive: false });
+        document.addEventListener("touchend", handleGlobalTouchEnd);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (!hasMoved) {
+        handleLabelClick(lineId, event);
+      }
+
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleTouchEnd);
+    };
+
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("touchend", handleTouchEnd);
+  };
+
   const handleGlobalMouseMove = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     const { isDragging: refIsDragging, dragLineId: refDragLineId } = dragStateRef.current;
 
     if (refIsDragging && refDragLineId && chartData && ohlcvData.length > 0) {
@@ -701,6 +764,114 @@ const ChartContainer = ({
         console.warn("Error during line dragging:", error);
       }
     }
+  };
+
+  const handleGlobalTouchMove = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const { isDragging: refIsDragging, dragLineId: refDragLineId } = dragStateRef.current;
+
+    if (refIsDragging && refDragLineId && chartData && ohlcvData.length > 0) {
+      try {
+        const chartCanvas = document.querySelector("canvas");
+        const touch = event.touches[0];
+
+        if (chartCanvas && touch) {
+          const rect = chartCanvas.getBoundingClientRect();
+          const y = touch.clientY - rect.top;
+
+          const yScale = chartData.datasets[0]?.data || [];
+          if (yScale.length === 0) return;
+
+          const chartHeight = 350;
+          const normalizedY = Math.max(0, Math.min(1, (y - 30) / (chartHeight - 60)));
+
+          const maxPrice = Math.max(
+            ...ohlcvData.map((item) => Math.max(item.high, item.close, item.open, item.low))
+          );
+          const minPrice = Math.min(
+            ...ohlcvData.map((item) => Math.min(item.low, item.close, item.open, item.high))
+          );
+          const priceRange = maxPrice - minPrice;
+
+          const newValue = maxPrice - normalizedY * priceRange;
+          const adjustedValue = adjustToKRXTickSize(newValue);
+
+          setHorizontalLines((prev) =>
+            prev.map((line) => {
+              if (line.id === refDragLineId) {
+                const updatedLine = { ...line, value: adjustedValue };
+
+                if (line.type === "entry") {
+                  onEntryPointChange(adjustedValue.toString());
+                } else if (line.type === "pyramiding") {
+                  const baseEntryPrice = parseFloat(entryPoint);
+                  if (baseEntryPrice && baseEntryPrice > 0) {
+                    const percentage = (
+                      ((adjustedValue - baseEntryPrice) / baseEntryPrice) *
+                      100
+                    ).toFixed(2);
+                    const percentageStr = percentage.toString();
+
+                    if (
+                      line.pyramidingIndex !== undefined &&
+                      line.pyramidingIndex >= 0 &&
+                      line.pyramidingIndex < pyramidingEntries.length
+                    ) {
+                      onPyramidingEntryChange(line.pyramidingIndex, percentageStr);
+                    }
+                  }
+                }
+
+                return updatedLine;
+              }
+              return line;
+            })
+          );
+        }
+      } catch (error) {
+        console.warn("Error during touch line dragging:", error);
+      }
+    }
+  };
+
+  const handleGlobalTouchEnd = () => {
+    const { isDragging: refIsDragging, dragLineId: refDragLineId } = dragStateRef.current;
+
+    if (refIsDragging && refDragLineId) {
+      const line = horizontalLines.find((line) => line.id === refDragLineId);
+      if (line) {
+        if (line.type === "entry") {
+          onEntryPointChange(line.value.toString());
+        } else if (line.type === "pyramiding") {
+          const lineIndex = horizontalLines.findIndex(
+            (l) => l.id === refDragLineId && l.type === "pyramiding"
+          );
+          if (lineIndex >= 0) {
+            const baseEntryPrice = parseFloat(entryPoint);
+            if (baseEntryPrice && baseEntryPrice > 0) {
+              const percentage = (((line.value - baseEntryPrice) / baseEntryPrice) * 100).toFixed(
+                2
+              );
+              const percentageStr = percentage > 0 ? `+${percentage}` : percentage.toString();
+              onPyramidingEntryChange(lineIndex, percentageStr);
+            } else {
+              onPyramidingEntryChange(lineIndex, line.value.toString());
+            }
+          }
+        }
+      }
+    }
+
+    setIsDragging(false);
+    setDragLineId(null);
+    dragStateRef.current = {
+      isDragging: false,
+      dragLineId: null,
+    };
+
+    document.removeEventListener("touchmove", handleGlobalTouchMove);
+    document.removeEventListener("touchend", handleGlobalTouchEnd);
   };
 
   const handleGlobalMouseUp = () => {
@@ -1249,13 +1420,7 @@ const ChartContainer = ({
           },
         },
         title: {
-          display: true,
-          text: 'ATR',
-          color: '#ff5722',
-          font: {
-            size: 12,
-            weight: 'bold',
-          },
+          display: false,
         },
       },
       y1: {
@@ -1277,13 +1442,7 @@ const ChartContainer = ({
           },
         },
         title: {
-          display: true,
-          text: 'ATR Ratio (%)',
-          color: '#795548',
-          font: {
-            size: 12,
-            weight: 'bold',
-          },
+          display: false,
         },
       },
     },
@@ -1478,11 +1637,11 @@ const ChartContainer = ({
                   sx={{
                     position: "absolute",
                     top: `${linePosition}px`,
-                    left: 8,
+                    left: { xs: 4, md: 8 },
                     zIndex: 1000,
                     display: "flex",
                     alignItems: "center",
-                    gap: 0.5,
+                    gap: { xs: 0.3, md: 0.5 },
                     backgroundColor:
                       isDragging && dragLineId === line.id
                         ? "rgba(255, 152, 0, 0.9)"
@@ -1490,7 +1649,7 @@ const ChartContainer = ({
                         ? "rgba(102, 126, 234, 0.9)"
                         : "rgba(255, 255, 255, 0.9)",
                     borderRadius: 1,
-                    p: 0.5,
+                    p: { xs: 0.3, md: 0.5 },
                     border:
                       isDragging && dragLineId === line.id
                         ? "2px solid #ff9800"
@@ -1514,11 +1673,12 @@ const ChartContainer = ({
                     },
                   }}
                   onMouseDown={(e) => handleLabelMouseDown(line.id, e)}
+                  onTouchStart={(e) => handleLabelTouchStart(line.id, e)}
                 >
                   <MKBox
                     sx={{
-                      width: 8,
-                      height: 2,
+                      width: { xs: 6, md: 8 },
+                      height: { xs: 1.5, md: 2 },
                       backgroundColor: line.color,
                       borderRadius: 1,
                     }}
@@ -1528,13 +1688,14 @@ const ChartContainer = ({
                     variant="caption"
                     sx={{
                       fontWeight: "bold",
+                      fontSize: { xs: "10px", md: "12px" },
                       color:
                         isDragging && dragLineId === line.id
                           ? "white"
                           : selectedLineId === line.id
                           ? "white"
                           : "text.primary",
-                      minWidth: "60px",
+                      minWidth: { xs: "45px", md: "60px" },
                       userSelect: "none",
                     }}
                   >
@@ -1545,9 +1706,9 @@ const ChartContainer = ({
                     size="small"
                     color="error"
                     sx={{
-                      minWidth: { xs: "44px", md: "32px" },
-                      minHeight: { xs: "44px", md: "32px" },
-                      p: 0.25,
+                      minWidth: { xs: "24px", md: "32px" },
+                      minHeight: { xs: "24px", md: "32px" },
+                      p: { xs: 0.15, md: 0.25 },
                       color:
                         isDragging && dragLineId === line.id
                           ? "white"
@@ -1563,7 +1724,7 @@ const ChartContainer = ({
                       handleDeleteHorizontalLine(line.id);
                     }}
                   >
-                    <Delete sx={{ fontSize: "12px" }} />
+                    <Delete sx={{ fontSize: { xs: "10px", md: "12px" } }} />
                   </IconButton>
                 </MKBox>
               );
@@ -1574,16 +1735,17 @@ const ChartContainer = ({
               <MKBox
                 sx={{
                   position: "absolute",
-                  top: 40,
-                  right: 8,
+                  top: { xs: 35, md: 40 },
+                  right: { xs: 8, md: 8 },
                   zIndex: 1002,
                   backgroundColor: "rgba(255, 255, 255, 0.98)",
                   borderRadius: 1,
-                  p: 1,
+                  p: { xs: 0.8, md: 1 },
                   border: "2px solid #667eea",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
                   animation: `${fadeIn} 0.2s ease-in-out`,
-                  minWidth: 200,
+                  minWidth: { xs: 180, md: 200 },
+                  maxWidth: { xs: 220, md: 300 },
                 }}
               >
                 <MKBox
@@ -1591,26 +1753,35 @@ const ChartContainer = ({
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    mb: 1,
+                    mb: { xs: 0.8, md: 1 },
                   }}
                 >
-                  <MKTypography variant="caption" fontWeight="bold" sx={{ fontSize: "12px" }}>
+                  <MKTypography 
+                    variant="caption" 
+                    fontWeight="bold" 
+                    sx={{ 
+                      fontSize: { xs: "10px", md: "12px" },
+                      lineHeight: 1.2,
+                      flex: 1,
+                      pr: 1,
+                    }}
+                  >
                     진입시점 설정 ({horizontalLines.find((l) => l.id === selectedLineId)?.value}원)
                   </MKTypography>
                   <IconButton
                     size="small"
                     color="default"
                     sx={{
-                      minWidth: { xs: "44px", md: "32px" },
-                      minHeight: { xs: "44px", md: "32px" },
-                      padding: "2px",
+                      minWidth: { xs: "24px", md: "32px" },
+                      minHeight: { xs: "24px", md: "32px" },
+                      padding: { xs: "1px", md: "2px" },
                     }}
                     onClick={() => setShowEntryPopup(false)}
                   >
-                    <Close sx={{ fontSize: "14px" }} />
+                    <Close sx={{ fontSize: { xs: "12px", md: "14px" } }} />
                   </IconButton>
                 </MKBox>
-                <MKBox sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                <MKBox sx={{ display: "flex", flexDirection: "column", gap: { xs: 0.4, md: 0.5 } }}>
                   {/* 1차 진입시점 버튼 */}
                   <Button
                     size="small"
@@ -1621,8 +1792,10 @@ const ChartContainer = ({
                       setShowEntryPopup(false);
                     }}
                     sx={{
-                      fontSize: "10px",
-                      py: 0.5,
+                      fontSize: { xs: "9px", md: "10px" },
+                      py: { xs: 0.4, md: 0.5 },
+                      px: { xs: 0.8, md: 1 },
+                      minHeight: { xs: "28px", md: "32px" },
                       borderColor: "#667eea",
                       color: "#667eea",
                       "&:hover": {
@@ -1646,8 +1819,10 @@ const ChartContainer = ({
                         setShowEntryPopup(false);
                       }}
                       sx={{
-                        fontSize: "10px",
-                        py: 0.5,
+                        fontSize: { xs: "9px", md: "10px" },
+                        py: { xs: 0.4, md: 0.5 },
+                        px: { xs: 0.8, md: 1 },
+                        minHeight: { xs: "28px", md: "32px" },
                         borderColor: "#ff9800",
                         color: "#ff9800",
                         "&:hover": {
