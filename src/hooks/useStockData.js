@@ -15,8 +15,8 @@ export const useStockData = () => {
     if (!stockCode) return [];
 
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
-      const response = await fetch(`${apiBaseUrl}/api/find_stock_ohlcv?code=${stockCode}&limit=63`);
+      const apiBaseUrl = window.REACT_APP_API_BASE_URL || "http://localhost:8000";
+      const response = await fetch(`${apiBaseUrl}/api/find_stock_ohlcv?code=${stockCode}&limit=150`);
       if (!response.ok) {
         throw new Error("OHLCV 데이터를 가져올 수 없습니다");
       }
@@ -36,7 +36,7 @@ export const useStockData = () => {
     if (!stockCode) return [];
 
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+      const apiBaseUrl = window.REACT_APP_API_BASE_URL || "http://localhost:8000";
       const response = await fetch(`${apiBaseUrl}/api/find_stock_index?code=${stockCode}&limit=10`);
       if (!response.ok) {
         throw new Error("인덱스 데이터를 가져올 수 없습니다");
@@ -65,8 +65,8 @@ export const useStockData = () => {
     if (!indexCode) return [];
 
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
-      const response = await fetch(`${apiBaseUrl}/api/find_index_ohlcv?code=${indexCode}&limit=63`);
+      const apiBaseUrl = window.REACT_APP_API_BASE_URL || "http://localhost:8000";
+      const response = await fetch(`${apiBaseUrl}/api/find_index_ohlcv?code=${indexCode}&limit=150`);
       if (!response.ok) {
         throw new Error("인덱스 OHLCV 데이터를 가져올 수 없습니다");
       }
@@ -86,9 +86,9 @@ export const useStockData = () => {
     if (!stockCode) return [];
 
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+      const apiBaseUrl = window.REACT_APP_API_BASE_URL || "http://localhost:8000";
       const response = await fetch(
-        `${apiBaseUrl}/api/find_stock_analysis?code=${stockCode}&limit=63`
+        `${apiBaseUrl}/api/find_stock_analysis?code=${stockCode}&limit=150`
       );
       if (!response.ok) {
         throw new Error("주식 분석 데이터를 가져올 수 없습니다");
@@ -123,7 +123,7 @@ export const useStockData = () => {
     const fetchStockData = async () => {
       try {
         setLoading(true);
-        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+        const apiBaseUrl = window.REACT_APP_API_BASE_URL || "http://localhost:8000";
         const response = await fetch(`${apiBaseUrl}/api/find_stock_inMTT?format=json`);
         if (!response.ok) {
           throw new Error("Network response was not ok");

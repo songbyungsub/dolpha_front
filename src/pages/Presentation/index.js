@@ -48,6 +48,7 @@ function Presentation() {
     openFinancialModal,
     financialData,
     financialLoading,
+    financialError,
     handleOpenFinancialModal,
     handleCloseFinancialModal,
   } = useFinancialData();
@@ -396,7 +397,7 @@ function Presentation() {
             <BottomNavigation
               value={mobileTab}
               onChange={handleMobileTabChange}
-              sx={{ 
+              sx={{
                 height: "80px",
                 "& .MuiBottomNavigationAction-root": {
                   fontSize: "0.75rem",
@@ -989,6 +990,7 @@ function Presentation() {
         selectedStock={selectedStock}
         financialData={financialData}
         loading={financialLoading}
+        error={financialError}
       />
 
       {/* Notification System */}

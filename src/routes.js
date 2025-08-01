@@ -39,78 +39,68 @@ Coded by www.creative-tim.com
 // @mui material components
 import Icon from "@mui/material/Icon";
 
-// @mui icons
-import GitHubIcon from "@mui/icons-material/GitHub";
-
 // Pages
-import AboutUs from "layouts/pages/landing-pages/about-us";
-import ContactUs from "layouts/pages/landing-pages/contact-us";
-import Author from "layouts/pages/landing-pages/author";
 import SignIn from "layouts/pages/authentication/sign-in";
 import MyPage from "pages/MyPage";
+import Logout from "pages/Logout";
+import MTT from "./layouts/pages/mtt";
+import WeeklyHigh from "./layouts/pages/weekly-high";
+import IssueInfo from "./layouts/pages/issue-info";
+import TopRising from "pages/TopRising";
+import FiftyDayHigh from "pages/FiftyDayHigh";
+import TradingConfigs from "pages/TradingConfigs";
+import DailyNewsClipping from "./layouts/pages/daily-news-clipping";
 import ProtectedRoute from "components/ProtectedRoute";
-
-// Sections
-import PageHeaders from "layouts/sections/page-sections/page-headers";
-import Features from "layouts/sections/page-sections/featuers";
-import Navbars from "layouts/sections/navigation/navbars";
-import NavTabs from "layouts/sections/navigation/nav-tabs";
-import Pagination from "layouts/sections/navigation/pagination";
-import Inputs from "layouts/sections/input-areas/inputs";
-import Forms from "layouts/sections/input-areas/forms";
-import Alerts from "layouts/sections/attention-catchers/alerts";
-import Modals from "layouts/sections/attention-catchers/modals";
-import TooltipsPopovers from "layouts/sections/attention-catchers/tooltips-popovers";
-import Avatars from "layouts/sections/elements/avatars";
-import Badges from "layouts/sections/elements/badges";
-import BreadcrumbsEl from "layouts/sections/elements/breadcrumbs";
-import Buttons from "layouts/sections/elements/buttons";
-import Dropdowns from "layouts/sections/elements/dropdowns";
-import ProgressBars from "layouts/sections/elements/progress-bars";
-import Toggles from "layouts/sections/elements/toggles";
-import Typography from "layouts/sections/elements/typography";
 
 const routes = [
   {
-    name: "pages",
-    icon: <Icon>dashboard</Icon>,
+    name: "전략",
+    icon: <Icon>psychology</Icon>,
     columns: 1,
-    rowsPerColumn: 2,
+    rowsPerColumn: 4,
     collapse: [
       {
-        name: "landing pages",
+        name: "투자 전략",
         collapse: [
           {
-            name: "about us",
-            route: "/pages/landing-pages/about-us",
-            component: <AboutUs />,
+            name: "MTT",
+            route: "/mtt",
+            component: <MTT />,
           },
           {
-            name: "contact us",
-            route: "/pages/landing-pages/contact-us",
-            component: <ContactUs />,
+            name: "52주 신고가",
+            route: "/weekly-high", 
+            component: <WeeklyHigh />,
           },
           {
-            name: "author",
-            route: "/pages/landing-pages/author",
-            component: <Author />,
+            name: "50일 신고가",
+            route: "/fifty-day-high",
+            component: <FiftyDayHigh />,
+          },
+          {
+            name: "상승률 TOP50",
+            route: "/top-rising",
+            component: <TopRising />,
           },
         ],
       },
+    ],
+  },
+  {
+    name: "자동매매",
+    icon: <Icon>smart_toy</Icon>,
+    columns: 1,
+    rowsPerColumn: 1,
+    collapse: [
       {
-        name: "account",
+        name: "관리",
         collapse: [
           {
-            name: "sign in",
-            route: "/pages/authentication/sign-in",
-            component: <SignIn />,
-          },
-          {
-            name: "my page",
-            route: "/pages/my-page",
+            name: "설정 목록",
+            route: "/trading-configs",
             component: (
               <ProtectedRoute>
-                <MyPage />
+                <TradingConfigs />
               </ProtectedRoute>
             ),
           },
@@ -119,166 +109,59 @@ const routes = [
     ],
   },
   {
-    name: "sections",
-    icon: <Icon>view_day</Icon>,
+    name: "정보",
+    icon: <Icon>info</Icon>,
+    columns: 1,
+    rowsPerColumn: 3,
     collapse: [
       {
-        name: "page sections",
-        description: "See all sections",
-        dropdown: true,
+        name: "시장 정보",
         collapse: [
           {
-            name: "page headers",
-            route: "/sections/page-sections/page-headers",
-            component: <PageHeaders />,
+            name: "이슈 정보",
+            route: "/issue-info",
+            component: <IssueInfo />,
           },
           {
-            name: "features",
-            route: "/sections/page-sections/features",
-            component: <Features />,
-          },
-        ],
-      },
-      {
-        name: "navigation",
-        description: "See all navigations",
-        dropdown: true,
-        collapse: [
-          {
-            name: "navbars",
-            route: "/sections/navigation/navbars",
-            component: <Navbars />,
-          },
-          {
-            name: "nav tabs",
-            route: "/sections/navigation/nav-tabs",
-            component: <NavTabs />,
-          },
-          {
-            name: "pagination",
-            route: "/sections/navigation/pagination",
-            component: <Pagination />,
-          },
-        ],
-      },
-      {
-        name: "input areas",
-        description: "See all input areas",
-        dropdown: true,
-        collapse: [
-          {
-            name: "inputs",
-            route: "/sections/input-areas/inputs",
-            component: <Inputs />,
-          },
-          {
-            name: "forms",
-            route: "/sections/input-areas/forms",
-            component: <Forms />,
-          },
-        ],
-      },
-      {
-        name: "attention catchers",
-        description: "See all examples",
-        dropdown: true,
-        collapse: [
-          {
-            name: "alerts",
-            route: "/sections/attention-catchers/alerts",
-            component: <Alerts />,
-          },
-          {
-            name: "modals",
-            route: "/sections/attention-catchers/modals",
-            component: <Modals />,
-          },
-          {
-            name: "tooltips & popovers",
-            route: "/sections/attention-catchers/tooltips-popovers",
-            component: <TooltipsPopovers />,
-          },
-        ],
-      },
-      {
-        name: "elements",
-        description: "See all 32 examples",
-        dropdown: true,
-        collapse: [
-          {
-            name: "avatars",
-            route: "/sections/elements/avatars",
-            component: <Avatars />,
-          },
-          {
-            name: "badges",
-            route: "/sections/elements/badges",
-            component: <Badges />,
-          },
-          {
-            name: "breadcrumbs",
-            route: "/sections/elements/breadcrumbs",
-            component: <BreadcrumbsEl />,
-          },
-          {
-            name: "buttons",
-            route: "/sections/elements/buttons",
-            component: <Buttons />,
-          },
-          {
-            name: "dropdowns",
-            route: "/sections/elements/dropdowns",
-            component: <Dropdowns />,
-          },
-          {
-            name: "progress bars",
-            route: "/sections/elements/progress-bars",
-            component: <ProgressBars />,
-          },
-          {
-            name: "toggles",
-            route: "/sections/elements/toggles",
-            component: <Toggles />,
-          },
-          {
-            name: "typography",
-            route: "/sections/elements/typography",
-            component: <Typography />,
+            name: "일간뉴스클리핑",
+            route: "/daily-news-clipping",
+            component: <DailyNewsClipping />,
           },
         ],
       },
     ],
   },
   {
-    name: "docs",
-    icon: <Icon>article</Icon>,
+    name: "계정",
+    icon: <Icon>account_circle</Icon>,
+    columns: 1,
+    rowsPerColumn: 3,
     collapse: [
       {
-        name: "getting started",
-        description: "All about overview, quick start, license and contents",
-        href: "https://www.creative-tim.com/learning-lab/react/quick-start/material-kit/",
-      },
-      {
-        name: "foundation",
-        description: "See our colors, icons and typography",
-        href: "https://www.creative-tim.com/learning-lab/react/colors/material-kit/",
-      },
-      {
-        name: "components",
-        description: "Explore our collection of fully designed components",
-        href: "https://www.creative-tim.com/learning-lab/react/alerts/material-kit/",
-      },
-      {
-        name: "plugins",
-        description: "Check how you can integrate our plugins",
-        href: "https://www.creative-tim.com/learning-lab/react/datepicker/material-kit/",
+        name: "account",
+        collapse: [
+          {
+            name: "로그인",
+            route: "/pages/authentication/sign-in",
+            component: <SignIn />,
+          },
+          {
+            name: "마이페이지",
+            route: "/pages/my-page",
+            component: (
+              <ProtectedRoute>
+                <MyPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            name: "로그아웃",
+            route: "/pages/logout",
+            component: <Logout />,
+          },
+        ],
       },
     ],
-  },
-  {
-    name: "github",
-    icon: <GitHubIcon />,
-    href: "https://www.github.com/creativetimofficial/material-kit-react",
   },
 ];
 

@@ -24,7 +24,8 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 // Material Kit 2 React themes
 import theme from "assets/theme";
-import Presentation from "layouts/pages/presentation";
+import MTT from "./layouts/pages/mtt";
+import WeeklyHigh from "./layouts/pages/weekly-high";
 
 // Material Kit 2 React routes
 import routes from "routes";
@@ -61,9 +62,11 @@ export default function App() {
       <AuthProvider>
         <Routes>
           {getRoutes(routes)}
-          <Route path="/presentation" element={<Presentation />} />
+          <Route path="/mtt" element={<MTT />} />
+          <Route path="/weekly-high" element={<WeeklyHigh />} />
+          <Route path="/presentation" element={<MTT />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="*" element={<Navigate to="/presentation" />} />
+          <Route path="*" element={<Navigate to="/mtt" />} />
         </Routes>
       </AuthProvider>
     </ThemeProvider>

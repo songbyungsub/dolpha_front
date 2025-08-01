@@ -35,6 +35,7 @@ const AutotradingAccordion = ({
   showSnackbar,
   authenticatedFetch,
   tradingForm,
+  strategyType = 'mtt', // 'mtt' 또는 'weekly_high'
 }) => {
   // tradingForm에서 상태와 핸들러 가져오기
   const {
@@ -105,6 +106,7 @@ const AutotradingAccordion = ({
             expanded={expandedAccordion === selectedStock.code}
             onChange={handleAccordionChange(selectedStock.code)}
             sx={{ mb: 1 }}
+            data-accordion-id={selectedStock.code}
           >
             <AccordionSummary
               expandIcon={<ExpandMore />}
@@ -534,6 +536,7 @@ const AutotradingAccordion = ({
                 expanded={expandedAccordion === selectedStock.code}
                 onChange={handleAccordionChange(selectedStock.code)}
                 sx={{ mb: 1 }}
+                data-accordion-id={selectedStock.code}
               >
                 <AccordionSummary
                   expandIcon={<ExpandMore />}
@@ -939,6 +942,7 @@ const AutotradingAccordion = ({
               expanded={expandedAccordion === stockConfig.stock_code}
               onChange={handleAccordionChange(stockConfig.stock_code)}
               sx={{ mb: 1 }}
+              data-accordion-id={stockConfig.stock_code}
             >
               <AccordionSummary
                 expandIcon={<ExpandMore />}
@@ -999,8 +1003,8 @@ const AutotradingAccordion = ({
                       <MKBox sx={{ display: "flex", gap: 2, mt: 0.5 }}>
                         <MKTypography variant="caption" color="text">
                           진입:{" "}
-                          {stockConfig.position_size
-                            ? `${Number(stockConfig.position_size).toLocaleString()}원`
+                          {stockConfig.entry_point
+                            ? `${Number(stockConfig.entry_point).toLocaleString()}원`
                             : "-"}
                         </MKTypography>
                         <MKTypography variant="caption" color="text">

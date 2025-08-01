@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
  * Custom hook for managing trading form state and validation
  * Handles trading mode, entry points, stop loss, take profit, pyramiding configuration
  */
-export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) => {
+export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar, strategyType = 'mtt', isModal = false) => {
   // Trading form state
   const [tradingMode, setTradingMode] = useState("manual");
   const [maxLoss, setMaxLoss] = useState("");
@@ -15,19 +15,55 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
   const [pyramidingEntries, setPyramidingEntries] = useState([]);
   const [positions, setPositions] = useState([100]);
 
-  // Reset form when selected stock changes
+  // Load default values when selected stock changes (모달이 아닌 경우에만)
   useEffect(() => {
-    if (selectedStock) {
-      setTradingMode("manual");
-      setMaxLoss("2");
-      setStopLoss("8");
-      setTakeProfit("24");
+    if (selectedStock && !isModal) {
+      loadDefaultValues();
+    }
+  }, [selectedStock, isModal]);
+
+  // 사용자가 설정한 기본 매매 설정값을 불러오는 함수
+  const loadDefaultValues = async () => {
+    try {
+      const apiBaseUrl = window.REACT_APP_API_BASE_URL || "http://localhost:8000";
+      const response = await authenticatedFetch(
+        `${apiBaseUrl}/api/mypage/trading-defaults/for-new-config`
+      );
+
+      if (response.ok) {
+        const defaults = await response.json();
+        
+        setTradingMode(defaults.trading_mode || "turtle");
+        setMaxLoss(defaults.max_loss ? defaults.max_loss.toString() : "");
+        setStopLoss(defaults.stop_loss ? defaults.stop_loss.toString() : "");
+        setTakeProfit(defaults.take_profit ? defaults.take_profit.toString() : "");
+        setPyramidingCount(defaults.pyramiding_count || 0);
+        setEntryPoint("");
+        setPyramidingEntries(defaults.pyramiding_entries || []);
+        setPositions(defaults.positions && defaults.positions.length > 0 ? defaults.positions : [100]);
+      } else {
+        // 기본값을 불러올 수 없으면 모든 필드 공란
+        setTradingMode("turtle");
+        setMaxLoss("");
+        setStopLoss("");
+        setTakeProfit("");
+        setPyramidingCount(0);
+        setEntryPoint("");
+        setPyramidingEntries([]);
+        setPositions([100]);
+      }
+    } catch (error) {
+      // 오류 발생 시 모든 필드 공란
+      setTradingMode("turtle");
+      setMaxLoss("");
+      setStopLoss("");
+      setTakeProfit("");
       setPyramidingCount(0);
       setEntryPoint("");
       setPyramidingEntries([]);
       setPositions([100]);
     }
-  }, [selectedStock]);
+  };
 
   // Adjust positions array when pyramiding count changes
   useEffect(() => {
@@ -45,27 +81,46 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
     setPositions(newPositions);
   }, [pyramidingCount]);
 
-  // Trading form handlers
-  const handleTradingModeChange = (event) => {
+  // 매매 방식 변경 시 해당 모드의 기본값을 불러오는 핸들러
+  const handleTradingModeChange = async (event) => {
     const newMode = event.target.value;
     setTradingMode(newMode);
 
-    // 모드 변경 시 해당 모드의 기본값으로 설정
-    if (newMode === "turtle") {
-      setMaxLoss("2");
-      setStopLoss("2");
-      setTakeProfit("6");
-      setPyramidingCount(2);
-      setPyramidingEntries(["1", "2"]);
-      setPositions([34, 33, 33]);
-    } else if (newMode === "manual") {
-      setMaxLoss("2");
-      setStopLoss("8");
-      setTakeProfit("24");
-      setPyramidingCount(0);
-      setPyramidingEntries([]);
-      setPositions([100]);
+    // 선택한 매매 모드에 해당하는 기본값을 MyPage에서 불러와서 적용
+    try {
+      const apiBaseUrl = window.REACT_APP_API_BASE_URL || "http://localhost:8000";
+      const response = await authenticatedFetch(
+        `${apiBaseUrl}/api/mypage/trading-defaults/for-new-config?mode=${newMode}`
+      );
+
+      if (response.ok) {
+        const defaults = await response.json();
+        
+        // 선택한 매매모드의 기본값 적용 (기본값이 없으면 공란)
+        setMaxLoss(defaults.max_loss ? defaults.max_loss.toString() : "");
+        setStopLoss(defaults.stop_loss ? defaults.stop_loss.toString() : "");
+        setTakeProfit(defaults.take_profit ? defaults.take_profit.toString() : "");
+        setPyramidingCount(defaults.pyramiding_count || 0);
+        setPyramidingEntries(defaults.pyramiding_entries || []);
+        setPositions(defaults.positions && defaults.positions.length > 0 ? defaults.positions : [100]);
+      } else {
+        // API 호출 실패시 공란으로 초기화
+        applyEmptyDefaults();
+      }
+    } catch (error) {
+      // 오류 발생시 공란으로 초기화
+      applyEmptyDefaults();
     }
+  };
+
+  // 모든 필드를 공란으로 초기화하는 함수
+  const applyEmptyDefaults = () => {
+    setMaxLoss("");
+    setStopLoss("");
+    setTakeProfit("");
+    setPyramidingCount(0);
+    setPyramidingEntries([]);
+    setPositions([100]);
   };
 
   const handlePyramidingCountChange = (event) => {
@@ -162,9 +217,9 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
     if (!stockCode) return;
 
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+      const apiBaseUrl = window.REACT_APP_API_BASE_URL || "http://localhost:8000";
       const response = await authenticatedFetch(
-        `${apiBaseUrl}/api/mypage/trading-configs/stock/${stockCode}`
+        `${apiBaseUrl}/api/mypage/trading-configs/stock/${stockCode}?strategy_type=${strategyType}`
       );
 
       if (response.ok) {
@@ -175,8 +230,11 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
         setStopLoss(config.stop_loss ? config.stop_loss.toString() : "");
         setTakeProfit(config.take_profit ? config.take_profit.toString() : "");
         setPyramidingCount(config.pyramiding_count || 0);
-        setEntryPoint(config.position_size ? config.position_size.toString() : "");
+        
+        // 1차 진입시점은 entry_point 필드에서 가져옴
+        setEntryPoint(config.entry_point ? config.entry_point.toString() : "");
 
+        // Django DB에서 완전한 데이터 가져옴
         if (config.pyramiding_entries && config.pyramiding_entries.length > 0) {
           setPyramidingEntries(config.pyramiding_entries);
         } else {
@@ -241,18 +299,19 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
       stock_code: selectedStock.code,
       stock_name: selectedStock.name,
       trading_mode: tradingMode,
+      strategy_type: strategyType,
       max_loss: maxLoss ? parseFloat(maxLoss) : null,
       stop_loss: stopLoss ? parseFloat(stopLoss) : null,
       take_profit: takeProfit ? parseFloat(takeProfit) : null,
       pyramiding_count: pyramidingCount,
-      position_size: entryPoint ? parseFloat(entryPoint) : null,
+      entry_point: entryPoint ? parseFloat(entryPoint) : null,
       pyramiding_entries: pyramidingEntries,
       positions: positions,
       is_active: currentIsActive,
     };
 
     try {
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+      const apiBaseUrl = window.REACT_APP_API_BASE_URL || "http://localhost:8000";
       const response = await authenticatedFetch(`${apiBaseUrl}/api/mypage/trading-configs`, {
         method: "POST",
         body: JSON.stringify(config),
@@ -287,16 +346,25 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
     }
   };
 
-  // Reset form
+  // 폼을 기본값으로 초기화하는 함수
   const resetTradingForm = () => {
-    setTradingMode("manual");
-    setMaxLoss("2");
-    setStopLoss("8");
-    setTakeProfit("24");
-    setPyramidingCount(0);
-    setEntryPoint("");
-    setPyramidingEntries([]);
-    setPositions([100]);
+    if (!isModal) {
+      loadDefaultValues();
+    }
+  };
+
+  // 모달용: 기존 설정으로 폼 초기화하는 함수
+  const loadExistingConfig = (config) => {
+    if (config) {
+      setTradingMode(config.trading_mode || 'manual');
+      setEntryPoint(config.entry_point ? config.entry_point.toString() : '');
+      setMaxLoss(config.max_loss ? config.max_loss.toString() : '');
+      setStopLoss(config.stop_loss ? config.stop_loss.toString() : '');
+      setTakeProfit(config.take_profit ? config.take_profit.toString() : '');
+      setPyramidingCount(config.pyramiding_count || 0);
+      setPyramidingEntries(config.pyramiding_entries || []);
+      setPositions(config.positions || [100]);
+    }
   };
 
   return {
@@ -336,5 +404,6 @@ export const useTradingForm = (selectedStock, authenticatedFetch, showSnackbar) 
     loadAutobotConfig,
     saveAutotradingConfig,
     resetTradingForm,
+    loadExistingConfig, // 모달용 함수 추가
   };
 };
